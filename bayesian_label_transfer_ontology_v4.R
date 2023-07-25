@@ -3,7 +3,7 @@
 # !!! A large amount of this file was built on top of Maddy Duran's
 # work in label_transfer.R in monocle3 1.3.1 !!!!
 
-# This function is used in train_priors_on_reference's optim
+# This function is used in train_priorson_reference's optim
 # function. The purpose of this function is to calculate the
 # log-likelyhood of the reference data set given the priors.
 # This function assumes that the correct path for the cell is
@@ -40,62 +40,24 @@ expectation <- function(
     return(-likelyhood)
 }
 
-# This function is called by train_priors_on_reference
-# the purpose of this function is to create a matrix
-# where the columns report how many k labels are reporting
-# that path. Every value is (Number of times that label 
-# was present in k-NN)/(k). Also, this ensures that the
-# correct path is in the first column of the matrix.
-
-#orthology_paths_to_matrix <- function(
-#    orthology_paths_,
-#    number_of_labels_,
-#    measured_,
-#    nn_table_
-#) {
-#
-#    #Declare the final matrix
-#    ratio_of_paths <- matrix(NA, nrow=number_of_labels_, ncol=nrow(orthology_paths_))
-#
-#    for(j in 1:nrow(orthology_paths_)) { 
-#
-#        path <- orthology_paths_[j, ]
-#
-#        #loop through each layer and calculate the ratio of labels reporting that path.
-#        ratios <- vector("numeric", length = number_of_labels_)
-#        for(h in 1:number_of_labels_) ratios[h] <- sum(nn_table_[[colnames(nn_table_)[h]]] == path[[colnames(measured_)[h]]]) / nrow(nn_table_)
-#
-#        #Ensure that the correct path is in the first column of the matrix
-#        if(all(measured_ == path) && j != 1) {
-#            temp <- ratio_of_paths[, 1]
-#            ratio_of_paths[, 1] <- ratios
-#            ratio_of_paths[, j] <- temp
-#        } else {
-#            ratio_of_paths[, j] <- ratios
-#        }
-#    }
-#
-#    return(ratio_of_paths)
-#}
-
 nn_table_to_matrix <- function(
     ref_ontology,
     nn_table,
-    number_of_labels
+    NUMBER_OF_LABELS
 ) {
 
     list_of_nn_table_colnames <- colnames(nn_table)
     number_of_paths <- nrow(ref_ontology)
     number_of_k_neighbors <- nrow(nn_table)
 
-    ratio_of_paths <- matrix(0, nrow=number_of_labels, ncol=number_of_paths)
+    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=number_of_paths)
 
     #This chunk will calculate the ratio of paths for unique label in cds_ref
     ratio_of_paths <- sapply(1:number_of_paths, function(j) {
         
         path <- ref_ontology[j, ]
         
-        ratios <- sapply(1:number_of_labels, function(h) {
+        ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
             sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / number_of_k_neighbors
         })
         
@@ -107,39 +69,39 @@ nn_table_to_matrix <- function(
 
 
 
-# This function has the end goal of maximizing the priors_
+# This function has the end goal of maximizing the priors
 # The way it does this is that it first calcuates the likelyhood
 # that we observe the dataset we have.
-# Then it uses the optim function to find the priors_ that maximize
+# Then it uses the optim function to find the priors that maximize
 # the likelyhood of the dataset we have.
 train_priors_on_reference <- function(
-    priors_,
-    query_search_,
-    ref_coldata_,
-    ref_column_names_,
-    ref_ontology_,
-    number_of_reference_cells_,
-    number_of_labels_
+    priors,
+    query_search,
+    ref_coldata,
+    ref_column_names,
+    ref_ontology,
+    NUMBER_OF_REFERENCE_CELLS,
+    NUMBER_OF_LABELS
 ) {
 
     #List of matrixs that report the ratio of labels reporting that path
-    list_of_ref_cells_paths <- vector("list", length = number_of_reference_cells_)
-    vector_of_measured_index <- vector("numeric", length = number_of_reference_cells_)
+    list_of_ref_cells_paths <- vector("list", length = NUMBER_OF_REFERENCE_CELLS)
+    vector_of_measured_index <- vector("numeric", length = NUMBER_OF_REFERENCE_CELLS)
 
     current_index_in_list <- 0
 
-    for(i in 1:number_of_reference_cells_) {
+    for(i in 1:NUMBER_OF_REFERENCE_CELLS) {
         
-        ref_neighbors <- query_search_[['nn.idx']][i,]
-        nn_table <- ref_coldata_[ref_neighbors, ref_column_names_]
+        ref_neighbors <- query_search[['nn.idx']][i,]
+        nn_table <- ref_coldata[ref_neighbors, ref_column_names]
 
         measured <- nn_table[1,]
         nn_table <- nn_table[-1,]
 
-        ratio_of_paths <- nn_table_to_matrix(ref_ontology_, nn_table, number_of_labels_)
+        ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
 
         #Find index in ontology that matches the measured
-        measured_index <- which(apply(ref_ontology_, 1, function(row) all(row == measured)))
+        measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
 
         #If all 1 or 0, skip
         measured_ratio_of_paths <- ratio_of_paths[, measured_index]
@@ -157,18 +119,18 @@ train_priors_on_reference <- function(
     vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
 
     #Optimize the priors
-    optim_result <- optim(par = priors_, 
+    optim_result <- optim(par = priors, 
                         fn = expectation, 
                         data = list_of_ref_cells_paths, 
                         measured_index = vector_of_measured_index, 
                         method="BFGS")
 
     #Normalize the priors
-    priors_ <- optim_result$par
-    priors_ <- abs(priors_)
-    priors_ <- priors_ / sum(priors_)
+    priors <- optim_result$par
+    priors <- abs(priors)
+    priors <- priors / sum(priors)
 
-    return(priors_)
+    return(priors)
 
 }
 
@@ -182,21 +144,21 @@ calculate_posteriors_and_label <- function(
     ref_column_names,
     ref_coldata,
     ref_ontology,
-    number_of_labels,
-    number_of_query_cells,
-    number_of_reference_cells,
-    number_of_cells
+    NUMBER_OF_LABELS,
+    NUMBER_OF_QUERY_CELLS,
+    NUMBER_OF_REFERENCE_CELLS,
+    NUMBER_OF_CELLS
 ) {
 
-    cds_nn <- data.frame(matrix(NA, nrow=number_of_query_cells, ncol=number_of_labels))
-    list_of_final_paths <- vector("list", length = number_of_query_cells)
+    cds_nn <- data.frame(matrix(NA, nrow=NUMBER_OF_QUERY_CELLS, ncol=NUMBER_OF_LABELS))
+    list_of_final_paths <- vector("list", length = NUMBER_OF_QUERY_CELLS)
 
-    for(i in 1:number_of_query_cells) {
+    for(i in 1:NUMBER_OF_QUERY_CELLS) {
 
-        nn_table <- ref_coldata[query_search[['nn.idx']][i + number_of_reference_cells,], ref_column_names]
+        nn_table <- ref_coldata[query_search[['nn.idx']][i + NUMBER_OF_REFERENCE_CELLS,], ref_column_names]
 
         #Calculate the ratio of paths for each label
-        ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, number_of_labels)
+        ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
 
         posteriors <- priors %*% ratio_of_paths
 
@@ -225,26 +187,26 @@ get_nn_ontology_cell_labels <- function(
 ) {
 
     #Get the number of labels and cells
-    number_of_cells <- nrow(query_data)
-    number_of_reference_cells <- nrow(ref_coldata)
-    number_of_query_cells <- number_of_cells - number_of_reference_cells
-    number_of_labels <- length(ref_column_names)
+    NUMBER_OF_CELLS <- nrow(query_data)
+    NUMBER_OF_REFERENCE_CELLS <- nrow(ref_coldata)
+    NUMBER_OF_QUERY_CELLS <- NUMBER_OF_CELLS - NUMBER_OF_REFERENCE_CELLS
+    NUMBER_OF_LABELS <- length(ref_column_names)
 
     ref_ontology <- ref_coldata[, ref_column_names]
     ref_ontology <- unique(ref_ontology)
 
-    priors <- rep((1/number_of_labels), number_of_labels)
+    priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
 
     # Report back an optimized prior by training it on 
     # a k-NN search of the reference data set.
-    priors <- train_priors_on_reference(
+    priors <- train_priorson_reference(
         priors, 
         query_search, 
         ref_coldata, 
         ref_column_names, 
         ref_ontology,
-        number_of_reference_cells, 
-        number_of_labels
+        NUMBER_OF_REFERENCE_CELLS, 
+        NUMBER_OF_LABELS
     )
 
     # TEMP ----------------------------------------------------------------
@@ -258,10 +220,10 @@ get_nn_ontology_cell_labels <- function(
         ref_column_names,
         ref_coldata,
         ref_ontology,
-        number_of_labels,
-        number_of_query_cells,
-        number_of_reference_cells,
-        number_of_cells
+        NUMBER_OF_LABELS,
+        NUMBER_OF_QUERY_CELLS,
+        NUMBER_OF_REFERENCE_CELLS,
+        NUMBER_OF_CELLS
     )
 
     return(cds_nn)
