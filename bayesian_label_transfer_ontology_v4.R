@@ -199,7 +199,7 @@ get_nn_ontology_cell_labels <- function(
 
     # Report back an optimized prior by training it on 
     # a k-NN search of the reference data set.
-    priors <- train_priorson_reference(
+    priors <- train_priors_on_reference(
         priors, 
         query_search, 
         ref_coldata, 
