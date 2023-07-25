@@ -1,3 +1,30 @@
+
+#' @title Affix full layer labels to a cell_data_set.
+#'
+#' @description For every cell label in a cell_data_set,
+#' this function will find the full path of that in label
+#' within ontology and affix it to the cell_data_set.
+#' 
+#' The ontology is found within ref_coldata. 
+#' 
+#' *** The function assumes that there is only one path to 
+#' get to the most speficic cell label and that every path 
+#' is given in the ref_coldata. ***
+#' 
+#' @param cds_qry A cell_data_set object. To pull cells
+#' to label from
+#' @param ref_coldata colData(reference) containing 
+#' the ontology of the cell labels.
+#' @param ref_column_names The column names of ref_coldata
+#' that contain the ontology. The order of the column names
+#' must be from most broad to most speficic.
+#' @param query_column_name The column name of colData(cds_qry)
+#' that contains the cell labels to be affixed.
+#' @param query_column_names (Optional) The column names of
+#' colData(cds_qry) that will be affixed to the cell_data_set.
+#' 
+#'
+
 affix_ontology_labels <- function(
     cds_qry,
     ref_coldata,
@@ -49,5 +76,3 @@ affix_ontology_labels <- function(
 
     return(cds_qry)
 }
-
-affix_ontology_labels(cds_qry, colData(cds_ref), ref_column_names, query_column_name, c("G", "T", "B", "S"))
