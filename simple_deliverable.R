@@ -8,8 +8,7 @@ affix_ontology_labels <- function(
 ) {
 
     assertthat::assert_that(
-        is.SingleCellExperiment(cds_qry),
-        is.data.frame(ref_coldata),
+        methods::is(cds_qry, 'cell_data_set'),
         is.character(ref_column_names),
         is.character(query_column_name),
         is.character(query_column_names)
@@ -24,7 +23,7 @@ affix_ontology_labels <- function(
     , msg = "affix_ontology_labels: ref_column_names must be a subset of the column names of ref_coldata")
 
     assertthat::assert_that(
-        query_column_name %in% colnames(cds_qry)
+        query_column_name %in% colnames(colData(cds_qry))
     , msg = "affix_ontology_labels: query_column_name must be a column name of cds_qry")
 
     
@@ -50,3 +49,5 @@ affix_ontology_labels <- function(
 
     return(cds_qry)
 }
+
+affix_ontology_labels(cds_qry, colData(cds_ref), ref_column_names, query_column_name, c("G", "T", "B", "S"))
