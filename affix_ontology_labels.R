@@ -22,7 +22,17 @@
 #' that contains the cell labels to be affixed.
 #' @param query_column_names (Optional) The column names of
 #' colData(cds_qry) that will be affixed to the cell_data_set.
-#' 
+#' @return a cell data object
+#' @examples
+#' \dontrun{
+#'   cds_qry <- affix_ontology_labels(
+#'     cds_qry,
+#'     colData(cds_ref),
+#'     c("germ_layer", "tissue", "cell_type_broad", "cell_type_sub"),
+#'     "cell_type_sub",
+#'     c("transfered_germ_layer", "transfered_tissue", 
+#'          "transfered_cell_type_broad", "transfered_cell_type_sub")
+#' }
 #'
 
 affix_ontology_labels <- function(
