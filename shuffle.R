@@ -3,11 +3,11 @@ shuffle <- function(
     cds_qry
 ) {
 
-    list <- list(cds_qry, cds_ref)
+    list <- list(cds_ref, cds_qry)
 
     for(cds in list) {
-        cell_labels <- colData(cds)$cell_type_sub
 
+        cell_labels <- colData(cds)$cell_type_sub
 
         cell_labels[cell_labels == "enveloping layer (EVL)"] <- "enveloping layer (EVL)/periderm 1"
         cell_labels[cell_labels == "periderm 1"] <- "enveloping layer (EVL)/periderm 1"
@@ -27,4 +27,22 @@ shuffle <- function(
 
         colData(cds)$cell_type_sub <- cell_labels
     }
+    
+    return(list)
+}
+
+
+shuffle_all(
+    cds_ref,
+    cds-qry
+) {
+    list <- list(cds_ref, cds_qry)
+
+    for(cds in list) {
+        for(col in c("germ_layer", "tissue", "cell_type_broad", "cell_type_sub")) {
+            colData(cds)[, col] <- sample(colData(cds)[, col])
+        }
+    }
+
+    return(list)
 }

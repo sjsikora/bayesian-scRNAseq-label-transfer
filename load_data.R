@@ -4,6 +4,7 @@ library("Matrix")
 library("assertthat")
 source("nearest_neighbors.R")
 source("bayesian_label_transfer_ontology_v4.R")
+source("shuffle.R")
 
 doItAll <- function() {
     load_data()
@@ -28,7 +29,7 @@ benchmark <- function() {
         ref_column_names=c("germ_layer", "tissue", "cell_type_broad", "cell_type_sub"),
         query_column_names = c("bay_germ", "bay_tissue", "bay_broad", "bay_sub"),
         transform_models_dir = 'cds_ref_test_models',
-        k = 20,
+        k = 25,
         nn_control = list(),
         verbose = FALSE
     )
@@ -183,7 +184,7 @@ V <- function() {
     query_column_names <<- c("bay_germ", "bay_tissue", "bay_broad", "bay_sub")
     transform_models_dir <<- 'cds_ref_test_models'
     ref_column_ontology = list()
-    k <<- 10
+    k <<- 30
     verbose <<- FALSE
     nn_control <<- list()
     ref_column_ontology <<- list()
