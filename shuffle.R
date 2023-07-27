@@ -36,6 +36,8 @@ shuffle_all(
     cds_ref,
     cds-qry
 ) {
+
+    set.seed(001)
     list <- list(cds_ref, cds_qry)
 
     for(cds in list) {
