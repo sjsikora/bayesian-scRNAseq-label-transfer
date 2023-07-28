@@ -32,18 +32,20 @@ shuffle <- function(
 }
 
 
-shuffle_all(
+shuffle_all <- function(
     cds_ref,
-    cds-qry
+    cds_qry
 ) {
 
     set.seed(001)
     list <- list(cds_ref, cds_qry)
 
-    for(cds in list) {
+    for(i in 1:2) {
+        cds <- list[[i]]
         for(col in c("germ_layer", "tissue", "cell_type_broad", "cell_type_sub")) {
             colData(cds)[, col] <- sample(colData(cds)[, col])
         }
+        list[[i]] <- cds
     }
 
     return(list)
