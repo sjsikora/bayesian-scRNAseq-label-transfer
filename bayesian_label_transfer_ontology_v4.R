@@ -194,6 +194,12 @@ get_nn_ontology_cell_labels <- function(
 
     ref_ontology <- ref_coldata[, ref_column_names]
     ref_ontology <- unique(ref_ontology)
+    ref_ontology <- as.data.frame(ref_ontology)
+    
+    #----------TEMP------------
+    ref_ontology <- rbind(ref_ontology, c("L1.1", "L2.1", "PDC", "Mono"))
+    ref_ontology <- rbind(ref_ontology, c("L1.2", "ERY", "L3.2", "Baso"))
+    #----------TEMP------------
 
     priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
 
@@ -258,7 +264,7 @@ bayesian_ontology_label_transferv3 <- function(
     assertthat::assert_that(assertthat::is.count(k))
 
     reduction_method <- match.arg(reduction_method)
-    ref_coldata <- colData(cds_ref)
+    ref_coldata <- as.data.frame(colData(cds_ref))
 
     if(!is.data.frame(ref_coldata)) ref_coldata <- as.data.frame(ref_coldata)
 
@@ -283,6 +289,7 @@ bayesian_ontology_label_transferv3 <- function(
         assertthat::assert_that(is.character(ref_coldata[[column_name]]),
                                 msg = paste0('ref_coldata column \'', column_name, '\' is not a character vector'))
     }
+
 
     if(reduction_method == 'UMAP') {
         nn_control_default <- list(method='annoy', metric='euclidean', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
@@ -319,20 +326,6 @@ bayesian_ontology_label_transferv3 <- function(
         stop('transfer_cell_labels: reduced dimension matrix and nearest neighbor index dimensions do not match')
     }
 
-    checksum_matrix_rownames <- cds_nn_index[['checksum_rownames']]
-    if(!is.na(checksum_matrix_rownames)) {
-        checksum_coldata_rownames <- digest::digest(sort(rownames(ref_coldata)))
-        if(checksum_matrix_rownames != checksum_coldata_rownames) {
-            # In earlier versions (<2022-08-29), I did not sort the rownames. Preserve compatibility.
-            checksum_coldata_rownames <- digest::digest(rownames(ref_coldata))
-            if(checksum_matrix_rownames != checksum_coldata_rownames) {
-            stop('transfer_ontology_cell_labels: matrix and colData rownames do not match')
-            }
-        }
-    } else if(!is.na(cds_nn_index[['nrow']]) && (nrow(ref_coldata) != cds_nn_index[['nrow']])) {
-        stop('transfer_ontology_cell_labels: matrix and colData row counts do not match')
-    }
-
     nn_control <- set_nn_control(mode=2,
                                nn_control=nn_control,
                                nn_control_default=nn_control_default,
@@ -343,7 +336,6 @@ bayesian_ontology_label_transferv3 <- function(
     # Load the reference projection models and nn indexes
     # into the query cds.
     if(!is.null(transform_models_dir)) {
-        #cds_query <- load_transform_models(cds=cds_query, directory_path=transform_models_dir)
         cds_com <- load_transform_models(cds=cds_com, directory_path=transform_models_dir)
     }
   

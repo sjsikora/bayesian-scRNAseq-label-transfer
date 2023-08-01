@@ -1,6 +1,7 @@
 cds_ref/*
 cds_qry/*
 cds_ref_test_models/*
+cds_tep/*
 .Rproj.user/*
 sclass_local.Rproj
 *.csv
