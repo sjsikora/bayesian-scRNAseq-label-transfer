@@ -7,8 +7,7 @@
 # function. The purpose of this function is to calculate the
 # log-likelyhood of the reference data set given the priors.
 # This function assumes that the correct path for the cell is
-# in the first col of the data matrix. And matrixs with all 1
-# or matrixs where the path is not in the matrix are not included.
+# in the first col of the data matrix.
 expectation <- function(
     data,
     par,
@@ -17,7 +16,6 @@ expectation <- function(
   
   #Ensure parameters are positive, between 0-1, and add up to one
   par <- abs(par)
-  
   par <- par / sum(par)
   
   # This vector will hold the likelihood of the correct path for
@@ -54,7 +52,6 @@ nn_table_to_matrix <- function(
   
   #This chunk will calculate the ratio of paths for unique label in cds_ref
   ratio_of_paths <- sapply(1:number_of_paths, function(j) {
-    
     path <- ref_ontology[j, ]
     
     ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
@@ -66,7 +63,6 @@ nn_table_to_matrix <- function(
   
   return(ratio_of_paths)
 }
-
 
 
 # This function has the end goal of maximizing the priors
@@ -214,10 +210,10 @@ get_nn_ontology_cell_labels <- function(
     NUMBER_OF_REFERENCE_CELLS, 
     NUMBER_OF_LABELS
   )
-  
-  # TEMP ----------------------------------------------------------------
-  print(paste0("Priors: ", priors))
-  # TEMP ----------------------------------------------------------------
+
+  for(i in 1:NUMBER_OF_LABELS) {
+    print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
+  }
   
   #Use priors to calcuate the posteriors and then find label
   cds_nn <- calculate_posteriors_and_label(
