@@ -65,7 +65,7 @@ affix_ontology_labels <- function(
 
     
     query_cells <- colData(cds_qry)[, query_column_name]
-    ref_ontology <- unique(ref_coldata[, ref_column_names])
+    ref_ontology <- as.data.frame(unique(ref_coldata[, ref_column_names]))
 
     NUMBER_OF_QUERY_CELLS <- length(query_cells)
     NUMBER_OF_LAYERS <- length(ref_column_names)
