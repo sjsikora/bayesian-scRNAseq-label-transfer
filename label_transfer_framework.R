@@ -7,8 +7,7 @@
 # function. The purpose of this function is to calculate the
 # log-likelyhood of the reference data set given the priors.
 # This function assumes that the correct path for the cell is
-# in the first col of the data matrix. And matrixs with all 1
-# or matrixs where the path is not in the matrix are not included.
+# in the first col of the data matrix.
 expectation <- function(
     data,
     par,
@@ -17,7 +16,6 @@ expectation <- function(
   
   #Ensure parameters are positive, between 0-1, and add up to one
   par <- abs(par)
-  
   par <- par / sum(par)
   
   # This vector will hold the likelihood of the correct path for
@@ -54,7 +52,6 @@ nn_table_to_matrix <- function(
   
   #This chunk will calculate the ratio of paths for unique label in cds_ref
   ratio_of_paths <- sapply(1:number_of_paths, function(j) {
-    
     path <- ref_ontology[j, ]
     
     ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
@@ -66,7 +63,6 @@ nn_table_to_matrix <- function(
   
   return(ratio_of_paths)
 }
-
 
 
 # This function has the end goal of maximizing the priors
@@ -214,10 +210,10 @@ get_nn_ontology_cell_labels <- function(
     NUMBER_OF_REFERENCE_CELLS, 
     NUMBER_OF_LABELS
   )
-  
-  # TEMP ----------------------------------------------------------------
-  print(paste0("Priors: ", priors))
-  # TEMP ----------------------------------------------------------------
+
+  for(i in 1:NUMBER_OF_LABELS) {
+    print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
+  }
   
   #Use priors to calcuate the posteriors and then find label
   cds_nn <- calculate_posteriors_and_label(
@@ -236,6 +232,45 @@ get_nn_ontology_cell_labels <- function(
 }
 
 
+#' @title Transfer ontology labels
+#'
+#' @description Transfer ontology labels from
+#' a reference to a query dataset. To do this,
+#' first, cds_qry and cds_ref are combined into
+#' a combo cds. Then, the combo cds is reduced
+#' using the reduction_method. Using k-NN the combo
+#' cds is compared to cds_ref. 
+#' 
+#' Then, priors for each layer of the ontology is
+#' optimized on the reference data set. The priors
+#' are then used to calculate the posteriors for each
+#' cell in the query data set. Finally, the cell is
+#' assigned a label based on the max posterior.
+#' 
+#' @param cds_query A cell_data_set object. An unkown
+#' set of cells to label
+#' @param cds_ref A cell_data_set object. Know set of
+#' cells to base the labels off of.
+#' @param reduction_method The method used to reduce
+#' the dimensionality of the combo cds. Must be one of
+#' 'UMAP', 'PCA', or 'LSI'.
+#' @param ref_column_names The column names of colData(cds_ref)
+#' that contain the ontology. The order of the column names
+#' must be from most broad to most speficic.
+#' @param query_column_names (Optional) The column names of
+#' colData(cds_qry) that will be affixed to the cell_data_set.
+#' @param transform_models_dir (Optional) The directory path
+#' to the transform models. If NULL, then the transform models
+#' will be loaded from the cds_ref.
+#' @param k The number of nearest neighbors to use in the
+#' k-NN search.
+#' @param nn_control (Optional) A list of parameters to control
+#' the k-NN search.
+#' @param verbose (Optional) A boolean. If TRUE, then the function
+#' will print out progress messages.
+#' @return A cell_data_set object with the query_column_names
+#' affixed to the colData.
+#' 
 bayesian_ontology_label_transferv3 <- function(
     cds_query,
     cds_ref,
@@ -306,16 +341,7 @@ bayesian_ontology_label_transferv3 <- function(
                                    verbose=verbose)
   
   #To make a nn index with both the reference and query data, we need to combine the cds
-  
-  cds_ref_temp <- cds_ref
-  cds_query_temp <- cds_query
-  
-  colData(cds_ref_temp)[['data_set']] <- 'reference'
-  colData(cds_query_temp)[['data_set']] <- 'query'
-  
-  #cds_com <- combine_cds(list(cds_ref_temp, cds_query_temp), keep_all_genes=TRUE, cell_names_unique=FALSE, keep_reduced_dims=TRUE)
-  cds_com <- combine_cds(list(cds_ref_temp, cds_query_temp), keep_reduced_dims = TRUE)
-  
+  cds_com <- combine_cds(list(cds_ref, cds_query), keep_reduced_dims = TRUE)
   cds_com <- load_transform_models(cds_com, directory_path=transform_models_dir)
   cds_com <- preprocess_cds(cds_com)
   
@@ -354,8 +380,6 @@ bayesian_ontology_label_transferv3 <- function(
   # loaded using load_transform_models() above.
   cds_res <- search_nn_index(query_matrix=cds_reduced_dims, nn_index=cds_nn_index,
                              k=k, nn_control=nn_control, verbose=verbose)
-  
-  
   
   cds_nn <- get_nn_ontology_cell_labels(
     query_data=cds_reduced_dims,

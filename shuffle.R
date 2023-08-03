@@ -42,7 +42,7 @@ shuffle_all <- function(
 
     for(i in 1:2) {
         cds <- list[[i]]
-        for(col in c("germ_layer", "tissue", "cell_type_broad", "cell_type_sub")) {
+        for(col in c("L1", "L2", "L3", "L4")) {
             colData(cds)[, col] <- sample(colData(cds)[, col])
         }
         list[[i]] <- cds
