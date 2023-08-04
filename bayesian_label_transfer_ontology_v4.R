@@ -191,10 +191,18 @@ get_nn_ontology_cell_labels <- function(
   ref_ontology <- ref_coldata[, ref_column_names]
   ref_ontology <- unique(ref_ontology)
   ref_ontology <- as.data.frame(ref_ontology)
-  
+
+  combinations <- expand.grid(L1 = ref_ontology[, 1], 
+    L2 = ref_ontology[, 2], 
+    L3 = ref_ontology[, 3], 
+    L4 = ref_ontology[, 4]
+  )
+  ref_ontology <- as.data.frame(combinations)
+
+
   #----------TEMP------------
-  ref_ontology <- rbind(ref_ontology, c("L1.1", "L2.1", "PDC", "Mono"))
-  ref_ontology <- rbind(ref_ontology, c("L1.2", "ERY", "L3.2", "Baso"))
+  #ref_ontology <- rbind(ref_ontology, c("L1.1", "L2.1", "Mono", "Mono"))
+  #ref_ontology <- rbind(ref_ontology, c("L1.2", "Ery", "Ery", "Baso"))
   #----------TEMP------------
   
   priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
@@ -360,12 +368,7 @@ bayesian_ontology_label_transferv3 <- function(
                                k=k,
                                verbose=verbose)
   
-  # Load the reference projection models and nn indexes
-  # into the query cds.
-  if(!is.null(transform_models_dir)) {
-    cds_com <- load_transform_models(cds=cds_com, directory_path=transform_models_dir)
-  }
-  
+
   assertthat::assert_that(!is.null(cds_query@reduce_dim_aux[[reduction_method]]),
                           msg=paste0("Reduction Method '", reduction_method, "' is not in the",
                                      "loaded model object."))
