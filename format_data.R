@@ -45,11 +45,9 @@ load_split_downloaded_data <- function() {
     cds_ref_D <- preprocess_cds(cds_ref_D)
     cds_ref_D <- reduce_dimension(cds_ref_D, build_nn_index=TRUE)
 
-    save_transform_models(cds_ref_D, 'cds_ref_D_models')
+    save_transform_models(cds_ref_D, 'cds_ref_R_D_models')
 
-
-    #Sam I left off here, finish these commands and then save models
-    cds_qry_D <- load_transform_models(cds_qry_D, 'cds_ref_D_models')
+    cds_qry_D <- load_transform_models(cds_qry_D, 'cds_ref_R_D_models')
 
     cds_qry_D <- preprocess_transform(cds_qry_D)
     cds_qry_D <- reduce_dimension_transform(cds_qry_D)
@@ -170,12 +168,12 @@ check_ontology <- function(
     }
 }
 
-
 newFormatData <- function(
     cds_ref,
-    cds_qry,
+    cds_qry
 ) {
     #Delete rows if they have cell type T, Prog, or Undifferentiated
 
     cds_ref <- cds_ref[, !(colData(cds_ref)$Cell.type.annotation %in% c('T', 'Prog', 'Undifferentiated'))]
+    cds_qry <- cds_qry[, !(colData(cds_qry)$Cell.type.annotation %in% c('T', 'Prog', 'Undifferentiated'))]
 }

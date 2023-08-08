@@ -8,6 +8,10 @@
 # log-likelyhood of the reference data set given the priors.
 # This function assumes that the correct path for the cell is
 # in the first col of the data matrix.
+
+holdon <- vector("logical", length = 13696)
+
+
 expectation <- function(
     data,
     par,
@@ -27,15 +31,20 @@ expectation <- function(
     matrix <- data[[i]]
     prob_of_paths <- par %*% matrix
     prob_of_paths <- prob_of_paths / sum(prob_of_paths)
-    expectation_vector[i] <- prob_of_paths[[measured_index[i]]]
-    
-    #expectation_vector[i] <- prob_of_paths[[1]]
+
+    #expectation_vector[i] <- prob_of_paths[[measured_index[i]]]
+
+    #If the index of the maxium prob_paths is the same as measured index return one else return 0
+    expectation_vector[i] <- ifelse(which.max(prob_of_paths) == measured_index[i], 1, 0)
+
+    if(holdon[i] && (expectation_vector[i] == 1)) print(i)
+
   }
   
-  likelyhood <- sum(log(expectation_vector))
+  likelyhood <- sum(expectation_vector)
   
   #Optim wants to minimize, so we return the negative of the likelyhood
-  return(-likelyhood)
+  return(likelyhood)
 }
 
 nn_table_to_matrix <- function(
@@ -93,11 +102,10 @@ train_priors_on_reference <- function(
     
     measured <- nn_table[1,]
     nn_table <- nn_table[-1,]
-    
-    ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
-    
-    #Find index in ontology that matches the measured
+
     measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
+
+    ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
     
     #If all 1 or 0, skip
     measured_ratio_of_paths <- ratio_of_paths[, measured_index]
@@ -105,7 +113,7 @@ train_priors_on_reference <- function(
     
     #Add the ratio of paths to the list
     current_index_in_list <- current_index_in_list + 1
-    
+
     vector_of_measured_index[current_index_in_list] <- measured_index
     list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
   }
@@ -115,7 +123,7 @@ train_priors_on_reference <- function(
   vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
   
   #Optimize the priors
-  optim_result <- optim(par = priors, 
+  optim_result <- optim(par = priors,
                         fn = expectation, 
                         data = list_of_ref_cells_paths, 
                         measured_index = vector_of_measured_index, 
@@ -192,16 +200,12 @@ get_nn_ontology_cell_labels <- function(
   ref_ontology <- unique(ref_ontology)
   ref_ontology <- as.data.frame(ref_ontology)
 
-  #----------TEMP------------ (Does not consider anything but 4 layers)
-  combinations <- expand.grid(L1 = ref_ontology[, 1], 
-    L2 = ref_ontology[, 2], 
-    L3 = ref_ontology[, 3], 
-    L4 = ref_ontology[, 4]
-  )
-  #----------TEMP------------
-
-
-  ref_ontology <- as.data.frame(combinations)
+  #combinations <- expand.grid(L1 = ref_ontology[, 1], 
+  #  L2 = ref_ontology[, 2], 
+  #  L3 = ref_ontology[, 3], 
+  #  L4 = ref_ontology[, 4]
+  #)
+  #ref_ontology <- as.data.frame(combinations)
 
 
   #----------TEMP------------
