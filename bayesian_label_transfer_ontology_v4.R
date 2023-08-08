@@ -377,20 +377,6 @@ bayesian_ontology_label_transferv3 <- function(
   if(ncol(cds_reduced_dims) != cds_nn_index[['ncol']]) {
     stop('transfer_cell_labels: reduced dimension matrix and nearest neighbor index dimensions do not match')
   }
-
-  checksum_matrix_rownames <- cds_nn_index[['checksum_rownames']]
-    if(!is.na(checksum_matrix_rownames)) {
-        checksum_coldata_rownames <- digest::digest(sort(rownames(as.data.frame(colData(cds_com)))))
-        if(checksum_matrix_rownames != checksum_coldata_rownames) {
-            # In earlier versions (<2022-08-29), I did not sort the rownames. Preserve compatibility.
-            checksum_coldata_rownames <- digest::digest(rownames(as.data.frame(colData(cds_com))))
-            if(checksum_matrix_rownames != checksum_coldata_rownames) {
-            stop('transfer_ontology_cell_labels: matrix and colData rownames do not match')
-            }
-        }
-    } else if(!is.na(cds_nn_index[['nrow']]) && (nrow(ref_coldata) != cds_nn_index[['nrow']])) {
-        stop('transfer_ontology_cell_labels: matrix and colData row counts do not match')
-    }
   
   nn_control <- set_nn_control(mode=2,
                                nn_control=nn_control,
