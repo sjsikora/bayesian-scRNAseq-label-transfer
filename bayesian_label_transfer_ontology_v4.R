@@ -28,7 +28,8 @@ expectation <- function(
     matrix <- data[[i]]
     prob_of_paths <- par %*% matrix
     prob_of_paths <- prob_of_paths / sum(prob_of_paths)
-    expectation_vector[i] <- prob_of_paths[[measured_index[i]]]
+
+    expectation_vector[i] <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
   }
   
   likelyhood <- sum(log(expectation_vector))

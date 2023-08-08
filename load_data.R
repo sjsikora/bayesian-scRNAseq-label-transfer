@@ -386,3 +386,31 @@ T <- function() {
     ref_column_ontology <<-ref_column_ontology
     cds_reduced_dims <<- cds_reduced_dims
 }
+
+expectationNumberRight <- function(
+  data,
+  par,
+  measured_index
+) {
+  #This is a benchmark to detemrine how many ref cells were got right with priors
+
+  #Ensure parameters are positive, between 0-1, and add up to one
+  par <- abs(par)
+  par <- par / sum(par)
+  
+  # This vector will hold the likelihood of the correct path for
+  # each cell in the reference data set.
+  expectation_vector <- vector("numeric", length = length(data))
+  
+  #Mutiply priors and normalize
+  for(i in 1:length(data)) {
+    matrix <- data[[i]]
+    prob_of_paths <- par %*% matrix
+    prob_of_paths <- prob_of_paths / sum(prob_of_paths)
+
+    expectation_vector[i] <- ifelse(max(prob_of_paths) == prob_of_paths[[measured_index[i]]], 1, 0)
+  }
+
+  return(sum(expectation_vector))
+  
+}
