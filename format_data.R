@@ -1,20 +1,23 @@
 
 load_split_downloaded_data <- function() {
 
-    expression_matrix <- Matrix::readMM('/net/trapnell/vol1/home/sjsikora/Y2/sclass/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_normed_counts.mtx')
+    expression_matrix <- Matrix::readMM('lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_normed_counts.mtx')
     expression_matrix <- Matrix::t(expression_matrix)
 
-    cell_metadata <- read.delim('/net/trapnell/vol1/home/sjsikora/Y2/sclass/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_metadata.txt')
-    gene_annotation <- readLines('/net/trapnell/vol1/home/sjsikora/Y2/sclass/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_gene_names.txt')
+    cell_metadata <- read.delim('lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_metadata.txt')
+    
     
     cds <- new_cell_data_set(expression_matrix,
                     cell_metadata = cell_metadata)
 
-    gene_names <- readLines('/net/trapnell/vol1/home/sjsikora/Y2/sclass/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_gene_names.txt')
+    gene_names <- readLines('lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_gene_names.txt')
     rownames(cds) <- gene_names
 
-    cell_barcodes <- readLines('/net/trapnell/vol1/home/sjsikora/Y2/sclass/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_cell_barcodes.txt')
+    cell_barcodes <- readLines('lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_cell_barcodes.txt')
     colnames(cds) <- cell_barcodes
+
+    number_of_cells <- dim(colData(cds_qry))[1]
+    rownames(colData(cds_qry)) <- paste0('cell_qry_', 1:number_of_cells)
 
     #-----Split-------
     
@@ -95,7 +98,6 @@ assign_layer_labels <- function(cds_ref_D, cds_qry_D) {
             if(cell_label == 'Mono') {
                 #10% to switch
                 if(runif(1) < 0.3) {
-                    print("break")
                     cell_label <- 'MonoBreak'
                 }
             }
@@ -103,7 +105,6 @@ assign_layer_labels <- function(cds_ref_D, cds_qry_D) {
             if(cell_label == 'Baso') {
                 #5% to switch
                 if(runif(1) < 0.3) {
-                    print("break")
                     cell_label <- 'BasoBreak'
                 }
             }
@@ -151,21 +152,51 @@ check_ontology <- function(
         c("T", "T", "T", "T")
     )
 
+    ontologyTrack <- rep("No", dim(cds_nn)[1])
+
     names(ontology) <- c("DC", "NK", "B", "Neu", "Baso", "Mono", "Ery", "Undifferentiated", "Prog", "T")
 
     number_of_rows <- dim(cds_nn)[1]
+
+    number_of_mono_cells <- 0
+    number_of_brokenmono_cells <- 0
+
+    number_of_baso_cells <- 0
+    number_of_brokenbaso_cells <- 0
 
     for(i in 1:number_of_rows) {
 
         strict_ontology <- ontology[[cds_nn[i, 4]]]
         assigned_ontology <- cds_nn[i ,]
 
+
+        if(assigned_ontology[4] == 'Mono') number_of_mono_cells <- number_of_mono_cells + 1
+        if(assigned_ontology[4] == 'Baso') number_of_baso_cells <- number_of_baso_cells + 1
+
+
         if (!all(strict_ontology == assigned_ontology)) {
             print(paste0('Cell ', i, ' has a mismatch'))
             print(paste0('Strict: ', strict_ontology))
             print(paste0('Assigned: ', assigned_ontology))
+
+            if(assigned_ontology[4] == 'Mono') {
+                number_of_brokenmono_cells <- number_of_brokenmono_cells + 1
+                ontologyTrack[i] <- 'MonoBreak'
+            }
+            if(assigned_ontology[4] == 'Baso') {
+                number_of_brokenbaso_cells <- number_of_brokenbaso_cells + 1
+                ontologyTrack[i] <- 'BasoBreak'
+            }
         }
     }
+
+    print(paste0('Number of mono cells: ', number_of_mono_cells))
+    print(paste0('Number of broken mono cells: ', number_of_brokenmono_cells))
+    
+    print(paste0('Number of baso cells: ', number_of_baso_cells))
+    print(paste0('Number of broken baso cells: ', number_of_brokenbaso_cells))
+
+    return(cbind(cds_nn, ontologyTrack))
 }
 
 newFormatData <- function(
