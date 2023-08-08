@@ -192,11 +192,15 @@ get_nn_ontology_cell_labels <- function(
   ref_ontology <- unique(ref_ontology)
   ref_ontology <- as.data.frame(ref_ontology)
 
+  #----------TEMP------------ (Does not consider anything but 4 layers)
   combinations <- expand.grid(L1 = ref_ontology[, 1], 
     L2 = ref_ontology[, 2], 
     L3 = ref_ontology[, 3], 
     L4 = ref_ontology[, 4]
   )
+  #----------TEMP------------
+
+
   ref_ontology <- as.data.frame(combinations)
 
 

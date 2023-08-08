@@ -104,7 +104,7 @@ assign_layer_labels <- function(cds_ref_D, cds_qry_D) {
 
             if(cell_label == 'Baso') {
                 #5% to switch
-                if(runif(1) < 0.15) {
+                if(runif(1) < 0.3) {
                     print("break")
                     cell_label <- 'BasoBreak'
                 }
@@ -168,4 +168,14 @@ check_ontology <- function(
             print(paste0('Assigned: ', assigned_ontology))
         }
     }
+}
+
+
+newFormatData <- function(
+    cds_ref,
+    cds_qry,
+) {
+    #Delete rows if they have cell type T, Prog, or Undifferentiated
+
+    cds_ref <- cds_ref[, !(colData(cds_ref)$Cell.type.annotation %in% c('T', 'Prog', 'Undifferentiated'))]
 }
