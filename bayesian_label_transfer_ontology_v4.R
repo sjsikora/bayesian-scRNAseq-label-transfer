@@ -9,9 +9,6 @@
 # This function assumes that the correct path for the cell is
 # in the first col of the data matrix.
 
-holdon <- vector("logical", length = 13696)
-
-
 expectation <- function(
     data,
     par,
@@ -31,20 +28,34 @@ expectation <- function(
     matrix <- data[[i]]
     prob_of_paths <- par %*% matrix
     prob_of_paths <- prob_of_paths / sum(prob_of_paths)
-
-    #expectation_vector[i] <- prob_of_paths[[measured_index[i]]]
-
-    #If the index of the maxium prob_paths is the same as measured index return one else return 0
-    expectation_vector[i] <- ifelse(which.max(prob_of_paths) == measured_index[i], 1, 0)
-
-    if(holdon[i] && (expectation_vector[i] == 1)) print(i)
-
+    expectation_vector[i] <- prob_of_paths[[measured_index[i]]]
   }
   
-  likelyhood <- sum(expectation_vector)
+  likelyhood <- sum(log(expectation_vector))
   
   #Optim wants to minimize, so we return the negative of the likelyhood
-  return(likelyhood)
+  return(-likelyhood)
+}
+
+
+#Ideally, this function would be woked into nn_table to matrix
+checkForVectorsBreakingDecending <- function(
+  ratio_of_paths
+) {
+    
+  #Check if any of the vectors are breaking decending
+  hasVectorBreakingDecending <- FALSE
+  for(l in 1:ncol(ratio_of_paths)) {
+    #Check if vector has any 0's
+    if(!any(ratio_of_paths[, l] == 0)) {
+      if(any(diff(ratio_of_paths[, l]) > 0)) {
+        hasVectorBreakingDecending <- TRUE
+        next
+      }
+    }
+  }
+  
+  return(hasVectorBreakingDecending)
 }
 
 nn_table_to_matrix <- function(
@@ -58,15 +69,14 @@ nn_table_to_matrix <- function(
   number_of_k_neighbors <- nrow(nn_table)
   
   ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=number_of_paths)
-  
+
   #This chunk will calculate the ratio of paths for unique label in cds_ref
   ratio_of_paths <- sapply(1:number_of_paths, function(j) {
     path <- ref_ontology[j, ]
-    
+
     ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
       sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / number_of_k_neighbors
     })
-    
     return(ratios)
   })
   
@@ -97,19 +107,25 @@ train_priors_on_reference <- function(
   
   for(i in 1:NUMBER_OF_REFERENCE_CELLS) {
     
+    #Search for k-NN
     ref_neighbors <- query_search[['nn.idx']][i,]
     nn_table <- ref_coldata[ref_neighbors, ref_column_names]
     
+    #Get the measured path and the index of that path in the ontology
     measured <- nn_table[1,]
-    nn_table <- nn_table[-1,]
-
     measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
 
+    #Trunicate nn table to not inculd measured
+    nn_table <- nn_table[-1,]
+
+    #Turn the nn_table to a matrix of ratios of paths
     ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
-    
-    #If all 1 or 0, skip
-    measured_ratio_of_paths <- ratio_of_paths[, measured_index]
-    if(all(measured_ratio_of_paths == 0) | all(measured_ratio_of_paths == 1) ) next
+
+    #If all the vectors are decending, priors dont matter so dont max
+    if(!checkForVectorsBreakingDecending(ratio_of_paths)) next
+
+    #Make sure measured path isnt all zeros
+    if(all(ratio_of_paths[, measured_index] == 0)) next
     
     #Add the ratio of paths to the list
     current_index_in_list <- current_index_in_list + 1
@@ -117,8 +133,11 @@ train_priors_on_reference <- function(
     vector_of_measured_index[current_index_in_list] <- measured_index
     list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
   }
-  
-  #Trunciate the list of ref cells paths to avoid 0's
+
+  #Priors dont matter, transfer at sub level
+  if(current_index_in_list == 0) return(c(rep(0, NUMBER_OF_LABELS - 1), 1))
+
+  #Trunciate the list of ref cells paths to avoid NA's
   list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
   vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
   
@@ -199,19 +218,6 @@ get_nn_ontology_cell_labels <- function(
   ref_ontology <- ref_coldata[, ref_column_names]
   ref_ontology <- unique(ref_ontology)
   ref_ontology <- as.data.frame(ref_ontology)
-
-  #combinations <- expand.grid(L1 = ref_ontology[, 1], 
-  #  L2 = ref_ontology[, 2], 
-  #  L3 = ref_ontology[, 3], 
-  #  L4 = ref_ontology[, 4]
-  #)
-  #ref_ontology <- as.data.frame(combinations)
-
-
-  #----------TEMP------------
-  #ref_ontology <- rbind(ref_ontology, c("L1.1", "L2.1", "Mono", "Mono"))
-  #ref_ontology <- rbind(ref_ontology, c("L1.2", "Ery", "Ery", "Baso"))
-  #----------TEMP------------
   
   priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
   
