@@ -63,27 +63,6 @@ expectation <- function(
   return(-result)
 }
 
-
-#Ideally, this function would be woked into nn_table to matrix
-checkForVectorsBreakingDecending <- function(
-  ratio_of_paths
-) {
-    
-  #Check if any of the vectors are breaking decending
-  hasVectorBreakingDecending <- FALSE
-  for(l in 1:ncol(ratio_of_paths)) {
-    #Check if vector has any 0's
-    if(!any(ratio_of_paths[, l] == 0)) {
-      if(any(diff(ratio_of_paths[, l]) > 0)) {
-        hasVectorBreakingDecending <- TRUE
-        next
-      }
-    }
-  }
-  
-  return(hasVectorBreakingDecending)
-}
-
 nn_table_to_matrix <- function(
     ref_ontology,
     nn_table,
@@ -147,9 +126,6 @@ train_priors_on_reference <- function(
 
     #Turn the nn_table to a matrix of ratios of paths
     ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
-
-    #If all the vectors are decending, priors dont matter so dont max
-    #if(!checkForVectorsBreakingDecending(ratio_of_paths)) next
 
     #Make sure measured path isnt all zeros (cant take log of 0) or all 1's (arent important in optmizing)
     if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
@@ -352,7 +328,7 @@ bayesian_ontology_label_transferv3 <- function(
     query_column_names = ref_column_names,
     transform_models_dir = NULL,
     k = 10,
-    maxeval = 300,
+    maxeval = 500,
     nn_control = list(),
     verbose = FALSE
     
@@ -453,8 +429,8 @@ bayesian_ontology_label_transferv3 <- function(
     query_data=cds_reduced_dims,
     query_search=cds_res,
     ref_coldata=ref_coldata,
-    ref_column_names=ref_column_names
-    maxeval=maxeval,
+    ref_column_names=ref_column_names,
+    maxeval=maxeval
   )
 
   #cds_nn <- check_ontology(cds_nn)

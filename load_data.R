@@ -208,7 +208,7 @@ VD <- function() {
     ref_column_names <<- c("L1", "L2", "L3", "L4")
     query_column_names <<- c("bay_L1", "bay_L2", "bay_L3", "bay_L4")
     transform_models_dir <<- 'lineage_pap/cds_ref_R_D_models'
-    ref_column_ontology = list()
+    maxeval <<- 500
     k <<- 30
     verbose <<- FALSE
     nn_control <<- list()
