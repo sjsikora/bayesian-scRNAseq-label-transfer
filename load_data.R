@@ -222,6 +222,22 @@ givemeanum <- function(x) {
 }
 
 
+R <- function() {
+    cds_qry <- bayesian_ontology_label_transferv3(
+        cds_query = cds_qry,
+        cds_ref = cds_ref,
+        reduction_method="UMAP",
+        ref_column_names=c("L1", "L2", "L3", "L4"),
+        query_column_names = c("bay_L1", "bay_L2", "bay_L3", "bay_L4"),
+        transform_models_dir = 'lineage_pap/cds_ref_R_D_models',
+        k = 30
+    )
+}
+
+
+
+
+
 cds_to_csv <- function(cds, everything = TRUE) {
     if (everything) write.csv(as.data.frame(colData(cds)), "cds_colData.csv")
     else {

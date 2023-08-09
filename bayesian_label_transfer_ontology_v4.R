@@ -34,10 +34,11 @@ expectation <- function(
     expectation_vector[i] <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
   }
   
-  likelyhood <- sum(log(expectation_vector))
+  #weight one * number of ones + weight two * (everything else)
+  number_of_ones <- length(expectation_vector[expectation_vector == 1])
   
   #Optim wants to minimize, so we return the negative of the likelyhood
-  return(-likelyhood)
+  return(number_of_ones)
 }
 
 
@@ -118,17 +119,17 @@ train_priors_on_reference <- function(
     measured <- nn_table[1,]
     measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
 
-    #Trunicate nn table to not inculd measured
+    #Trunicate nn table to not inculde measured
     nn_table <- nn_table[-1,]
 
     #Turn the nn_table to a matrix of ratios of paths
     ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
 
     #If all the vectors are decending, priors dont matter so dont max
-    if(!checkForVectorsBreakingDecending(ratio_of_paths)) next
+    #if(!checkForVectorsBreakingDecending(ratio_of_paths)) next
 
     #Make sure measured path isnt all zeros
-    if(all(ratio_of_paths[, measured_index] == 0)) next
+    if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
     
     #Add the ratio of paths to the list
     current_index_in_list <- current_index_in_list + 1
@@ -149,7 +150,7 @@ train_priors_on_reference <- function(
                         fn = expectation, 
                         data = list_of_ref_cells_paths, 
                         measured_index = vector_of_measured_index, 
-                        method="BFGS")
+                        method="SANN")
   
   #Normalize the priors
   priors <- optim_result$par
@@ -159,7 +160,6 @@ train_priors_on_reference <- function(
   return(priors)
   
 }
-
 
 # Calculate the posteriors. Using the priors that we have optimized
 # mutiply that by the ratio of paths for each cell. and report the max
@@ -407,7 +407,12 @@ bayesian_ontology_label_transferv3 <- function(
     ref_coldata=ref_coldata,
     ref_column_names=ref_column_names
   )
-  
+
+  #cds_nn <- check_ontology(cds_nn)
+  #colnames(cds_nn) <- c(query_column_names, "break")
+  #rownames(colData(cds_query)) <- 1:54277
+  #plot_cells(cds_query, color_cells_by="break")
+
   colnames(cds_nn) <- query_column_names
   
   colData(cds_query) <- cbind(colData(cds_query), cds_nn)
