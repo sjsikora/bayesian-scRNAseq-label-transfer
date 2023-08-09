@@ -10,10 +10,12 @@
 # in the first col of the data matrix.
 
 expectation <- function(
+    x0,
     data,
-    par,
     measured_index
 ) {
+
+  par <- x0
   
   #Ensure parameters are positive, between 0-1, and add up to one
   par <- abs(par)
@@ -29,16 +31,36 @@ expectation <- function(
     prob_of_paths <- par %*% matrix
     prob_of_paths <- prob_of_paths / sum(prob_of_paths)
 
-    #We want to maxmize not the likelyhood of the path appearing, but we want to ensure the
-    #correct path has the highest likelyhood.
-    expectation_vector[i] <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+    expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+
+    #If there is a tie, return 0.5. We do not want ties
+    if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) {
+      expectation <- 0.5
+    }
+  
+    expectation_vector[i] <- expectation
   }
   
-  #weight one * number of ones + weight two * (everything else)
+  # The idea of the result is that is should first priotize the
+  # sheer number of correct guess, and then it should consider
+  # the likelyhood of the correct guess.
+
+  # (Number of Correct Guesses).(Likelyhood of Measured Paths that arent max)
+
   number_of_ones <- length(expectation_vector[expectation_vector == 1])
+  partial_probs <- expectation_vector[expectation_vector != 1]
+
+  log_likelyhood <- sum(log(partial_probs))
+
+  #0.01 and 400 are arbitrary. There just needed to be a senseable decimal
+  #point to optmize around and an input of 0 would equal around 1.
+  sigmoid_logstic_partial_probs <- 1 / (1 + exp(-0.01 * (log_likelyhood + 400)))
+
+  result <- number_of_ones + sigmoid_logstic_partial_probs
+
   
   #Optim wants to minimize, so we return the negative of the likelyhood
-  return(number_of_ones)
+  return(-result)
 }
 
 
@@ -99,6 +121,7 @@ train_priors_on_reference <- function(
     ref_coldata,
     ref_column_names,
     ref_ontology,
+    maxeval,
     NUMBER_OF_REFERENCE_CELLS,
     NUMBER_OF_LABELS
 ) {
@@ -128,7 +151,7 @@ train_priors_on_reference <- function(
     #If all the vectors are decending, priors dont matter so dont max
     #if(!checkForVectorsBreakingDecending(ratio_of_paths)) next
 
-    #Make sure measured path isnt all zeros
+    #Make sure measured path isnt all zeros (cant take log of 0) or all 1's (arent important in optmizing)
     if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
     
     #Add the ratio of paths to the list
@@ -144,21 +167,41 @@ train_priors_on_reference <- function(
   #Trunciate the list of ref cells paths to avoid NA's
   list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
   vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
-  
-  #Optimize the priors
-  optim_result <- optim(par = priors,
-                        fn = expectation, 
-                        data = list_of_ref_cells_paths, 
-                        measured_index = vector_of_measured_index, 
-                        method="SANN")
-  
+
+  optim_result_GN <- nloptr(
+    opts = list("algorithm"="NLOPT_GN_ISRES", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
+
+    x0 = priors,
+    lb = rep(0, NUMBER_OF_LABELS),
+    ub = rep(1, NUMBER_OF_LABELS),
+
+    eval_f = expectation,
+    data = list_of_ref_cells_paths, 
+    measured_index = vector_of_measured_index
+  )
+
   #Normalize the priors
-  priors <- optim_result$par
+  priors <- optim_result_GN$solution
   priors <- abs(priors)
   priors <- priors / sum(priors)
-  
-  return(priors)
-  
+
+  optim_result_LN <- nloptr(
+    opts = list("algorithm"="NLOPT_LN_SBPLX", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
+
+    x0 = priors,
+    lb = rep(0, NUMBER_OF_LABELS),
+    ub = rep(1, NUMBER_OF_LABELS),
+
+    eval_f = expectation,
+    data = list_of_ref_cells_paths, 
+    measured_index = vector_of_measured_index
+  )
+
+  priors <- optim_result_LN$solution
+  priors <- abs(priors)
+  priors <- priors / sum(priors)
+
+  return(priors) 
 }
 
 # Calculate the posteriors. Using the priors that we have optimized
@@ -209,7 +252,8 @@ get_nn_ontology_cell_labels <- function(
     query_data,
     query_search,
     ref_coldata,
-    ref_column_names
+    ref_column_names,
+    maxeval
 ) {
   
   #Get the number of labels and cells
@@ -232,6 +276,7 @@ get_nn_ontology_cell_labels <- function(
     ref_coldata, 
     ref_column_names, 
     ref_ontology,
+    maxeval,
     NUMBER_OF_REFERENCE_CELLS, 
     NUMBER_OF_LABELS
   )
@@ -291,6 +336,8 @@ get_nn_ontology_cell_labels <- function(
 #' k-NN search.
 #' @param nn_control (Optional) A list of parameters to control
 #' the k-NN search.
+#' @param maxeval (Optional) The maximum number of iterations
+#' to use in the optimization of the priors.
 #' @param verbose (Optional) A boolean. If TRUE, then the function
 #' will print out progress messages.
 #' @return A cell_data_set object with the query_column_names
@@ -305,6 +352,7 @@ bayesian_ontology_label_transferv3 <- function(
     query_column_names = ref_column_names,
     transform_models_dir = NULL,
     k = 10,
+    maxeval = 300,
     nn_control = list(),
     verbose = FALSE
     
@@ -406,6 +454,7 @@ bayesian_ontology_label_transferv3 <- function(
     query_search=cds_res,
     ref_coldata=ref_coldata,
     ref_column_names=ref_column_names
+    maxeval=maxeval,
   )
 
   #cds_nn <- check_ontology(cds_nn)

@@ -2,6 +2,8 @@ library("dplyr")
 library("monocle3")
 library("Matrix")
 library("assertthat")
+library("nloptr")
+
 source("nearest_neighbors.R")
 source("bayesian_label_transfer_ontology_v4.R")
 source("shuffle.R")
