@@ -145,7 +145,7 @@ train_priors_on_reference <- function(
   vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
 
   optim_result_GN <- nloptr(
-    opts = list("algorithm"="NLOPT_GN_ISRES", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
+    opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
 
     x0 = priors,
     lb = rep(0, NUMBER_OF_LABELS),
@@ -162,7 +162,7 @@ train_priors_on_reference <- function(
   priors <- priors / sum(priors)
 
   optim_result_LN <- nloptr(
-    opts = list("algorithm"="NLOPT_LN_SBPLX", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
+    opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
 
     x0 = priors,
     lb = rep(0, NUMBER_OF_LABELS),
