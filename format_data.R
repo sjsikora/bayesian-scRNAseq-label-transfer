@@ -61,7 +61,7 @@ load_split_downloaded_data <- function() {
     return(list(cds_ref_D, cds_qry_D))
 }
 
-assign_layer_labels <- function(cds_ref_D, cds_qry_D) {
+assign_layer_labels <- function(cds_ref_D, cds_qry_D, monoProb = 0.3, basoProb = 0.3) {
 
     ontology <- list(
         c("L1.1", "L2.1", "DC", "DC"),
@@ -97,15 +97,17 @@ assign_layer_labels <- function(cds_ref_D, cds_qry_D) {
 
             if(cell_label == 'Mono') {
                 #10% to switch
-                if(runif(1) < 0.3) {
+                if(runif(1) < monoProb) {
                     cell_label <- 'MonoBreak'
+                    print("monoBreak")
                 }
             }
 
             if(cell_label == 'Baso') {
                 #5% to switch
-                if(runif(1) < 0.3) {
+                if(runif(1) < basoProb) {
                     cell_label <- 'BasoBreak'
+                    print("BasoBreak")
                 }
             }
 
