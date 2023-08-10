@@ -3,50 +3,45 @@
   # !!! A large amount of this file was built on top of Maddy Duran's
   # work in label_transfer.R in monocle3 1.3.1 !!!!
 
-  # This function is used in train_priorson_reference's optim
-  # function. The purpose of this function is to calculate the
-  # log-likelyhood of the reference data set given the priors.
-  # This function assumes that the correct path for the cell is
-  # in the first col of the data matrix.
-
+  # This function evaluates priors based on the reference data set.
+  # It is called by the function train_priors_on_reference. The
+  # function will return a negative value that is the "likelyhood" of
+  # seeing the data we given priors. This number is formatted as
+  # - (Number of correctly identifyied paths).(sigmoid(log(prod(
+  # all measured paths that were not identified))))
+  # The idea of this result is that is should first priotize the
+  # sheer number of correct guess, and then it should consider
+  # the likelyhood of the correct guess.
   expectation <- function(
       x0,
       data,
       measured_index
   ) {
 
-    par <- x0
-    
-    #Ensure parameters are positive, between 0-1, and add up to one
+    #Ensure parameters are positive and add up to one
     par <- abs(x0)
     par <- par / sum(par)
     
-    # This vector will hold the likelihood of the correct path for
-    # each cell in the reference data set.
+    #Create vector to store the likelyhood of each path
     expectation_vector <- vector("numeric", length = length(data))
     
-    #Mutiply priors and normalize
     for(i in 1:length(data)) {
+
+      #Mutiply priors and normalize
       matrix <- data[[i]]
       prob_of_paths <- par %*% matrix
       prob_of_paths <- prob_of_paths / sum(prob_of_paths)
 
+      #Likelyhood function, returns 1 if
       expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
 
-      #If there is a tie, return 0.5. We do not want ties
-      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) {
-        expectation <- 0.5
-      }
+      #If there is a tie, return 0.5. We do not want ties.
+      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
     
       expectation_vector[i] <- expectation
     }
-    
-    # The idea of the result is that is should first priotize the
-    # sheer number of correct guess, and then it should consider
-    # the likelyhood of the correct guess.
 
     # (Number of Correct Guesses).(Likelyhood of Measured Paths that arent max)
-
     number_of_ones <- length(expectation_vector[expectation_vector == 1])
     partial_probs <- expectation_vector[expectation_vector != 1]
 
@@ -57,11 +52,17 @@
     sigmoid_logstic_partial_probs <- 1 / (1 + exp(-0.01 * (log_likelyhood + 400)))
 
     result <- number_of_ones + sigmoid_logstic_partial_probs
-
     
     #Optim wants to minimize, so we return the negative of the likelyhood
     return(-result)
   }
+
+
+  # This function takes in a k-NN dataframe. It then returns
+  # a matrix where each coloumn is a path down the ontology,
+  # each row is a layer, and every entry is how many times
+  # that label was seen in the k-NN dataframe. Called by
+  # train_priors_on_reference and calculate_posteriors_and_label.
 
   nn_table_to_matrix <- function(
       ref_ontology,
@@ -70,17 +71,17 @@
   ) {
     
     list_of_nn_table_colnames <- colnames(nn_table)
-    number_of_paths <- nrow(ref_ontology)
-    number_of_k_neighbors <- nrow(nn_table)
+    NUMBER_OF_ONTOLOGY_PATHS <- nrow(ref_ontology)
+    NUMBER_OF_NEAREST_NEIGHBORS <- nrow(nn_table)
     
-    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=number_of_paths)
+    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ONTOLOGY_PATHS)
 
     #This chunk will calculate the ratio of paths for unique label in cds_ref
-    ratio_of_paths <- sapply(1:number_of_paths, function(j) {
+    ratio_of_paths <- sapply(1:NUMBER_OF_ONTOLOGY_PATHS, function(j) {
       path <- ref_ontology[j, ]
 
       ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
-        sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / number_of_k_neighbors
+        sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / NUMBER_OF_NEAREST_NEIGHBORS
       })
       return(ratios)
     })
@@ -90,10 +91,12 @@
 
 
   # This function has the end goal of maximizing the priors
-  # The way it does this is that it first calcuates the likelyhood
-  # that we observe the dataset we have.
-  # Then it uses the optim function to find the priors that maximize
-  # the likelyhood of the dataset we have.
+  # on the reference data set. The first part of the function
+  # will setup the data so it can used to evalute the priors.
+  # The second part of the function will first globally
+  # optimize the priors, then use a local optmizer to fine
+  # tune the priors. The function will return the optimized
+  # priors.
   train_priors_on_reference <- function(
       priors,
       query_search,
@@ -143,13 +146,15 @@
       list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
     }
 
-    #Priors dont matter, transfer at sub level
+    # If there were no cells that were not all 0's or all 1's just transfer
+    # at the most speficic label.
     if(current_index_in_list == 0) return(c(rep(0, NUMBER_OF_LABELS - 1), 1))
 
     #Trunciate the list of ref cells paths to avoid NA's
     list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
     vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
 
+    #Globally optimize the priors
     optim_result_GN <- nloptr(
       opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
 
@@ -167,6 +172,7 @@
     priors <- abs(priors)
     priors <- priors / sum(priors)
 
+    #Locally optimize the priors
     optim_result_LN <- nloptr(
       opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
 
@@ -179,12 +185,13 @@
       measured_index = vector_of_measured_index
     )
 
+    #Normalize the priors
     priors <- optim_result_LN$solution
     priors <- abs(priors)
     priors <- priors / sum(priors)
 
     #Print likelyhood of dataset out of length of list_of_ref_cells_paths
-    print(paste("Likelyhood of dataset:", optim_result_LN$objective, "/", length(list_of_ref_cells_paths)))
+    print(paste("Likelyhood of dataset:", (optim_result_LN$objective * (-1)), "/", length(list_of_ref_cells_paths)))
 
     return(priors) 
   }
