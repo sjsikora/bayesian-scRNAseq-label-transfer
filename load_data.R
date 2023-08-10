@@ -20,10 +20,10 @@ L <- function() {
     cds_qry <<- load_monocle_objects("cds_qry")
 }
 
-LD <- function(monoProb = 0.3, basoPorb= 0.3) {
+LD <- function(monoProb = 0.3, basoProb= 0.3) {
     cds_ref <- load_monocle_objects("lineage_pap/cds_ref_R_D")
     cds_qry <- load_monocle_objects("lineage_pap/cds_qry_R_D")
-    list_of_cds <- assign_layer_labels(cds_ref, cds_qry, monoProb, basoPorb)
+    list_of_cds <- assign_layer_labels(cds_ref, cds_qry, monoProb = monoProb, basoProb = basoProb)
     cds_ref <<- list_of_cds[[1]]
     cds_qry <<- list_of_cds[[2]]
 }

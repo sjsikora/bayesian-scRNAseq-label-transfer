@@ -1,446 +1,457 @@
-# Sam Sikora Summer Student 2023
-#
-# !!! A large amount of this file was built on top of Maddy Duran's
-# work in label_transfer.R in monocle3 1.3.1 !!!!
+  # Sam Sikora Summer Student 2023
+  #
+  # !!! A large amount of this file was built on top of Maddy Duran's
+  # work in label_transfer.R in monocle3 1.3.1 !!!!
 
-# This function is used in train_priorson_reference's optim
-# function. The purpose of this function is to calculate the
-# log-likelyhood of the reference data set given the priors.
-# This function assumes that the correct path for the cell is
-# in the first col of the data matrix.
+  # This function is used in train_priorson_reference's optim
+  # function. The purpose of this function is to calculate the
+  # log-likelyhood of the reference data set given the priors.
+  # This function assumes that the correct path for the cell is
+  # in the first col of the data matrix.
 
-expectation <- function(
-    x0,
-    data,
-    measured_index
-) {
+  expectation <- function(
+      x0,
+      data,
+      measured_index
+  ) {
 
-  par <- x0
-  
-  #Ensure parameters are positive, between 0-1, and add up to one
-  par <- abs(par)
-  par <- par / sum(par)
-  
-  # This vector will hold the likelihood of the correct path for
-  # each cell in the reference data set.
-  expectation_vector <- vector("numeric", length = length(data))
-  
-  #Mutiply priors and normalize
-  for(i in 1:length(data)) {
-    matrix <- data[[i]]
-    prob_of_paths <- par %*% matrix
-    prob_of_paths <- prob_of_paths / sum(prob_of_paths)
+    par <- x0
+    
+    #Ensure parameters are positive, between 0-1, and add up to one
+    par <- abs(x0)
+    par <- par / sum(par)
+    
+    # This vector will hold the likelihood of the correct path for
+    # each cell in the reference data set.
+    expectation_vector <- vector("numeric", length = length(data))
+    
+    #Mutiply priors and normalize
+    for(i in 1:length(data)) {
+      matrix <- data[[i]]
+      prob_of_paths <- par %*% matrix
+      prob_of_paths <- prob_of_paths / sum(prob_of_paths)
 
-    expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+      expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
 
-    #If there is a tie, return 0.5. We do not want ties
-    if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) {
-      expectation <- 0.5
+      #If there is a tie, return 0.5. We do not want ties
+      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) {
+        expectation <- 0.5
+      }
+    
+      expectation_vector[i] <- expectation
     }
-  
-    expectation_vector[i] <- expectation
+    
+    # The idea of the result is that is should first priotize the
+    # sheer number of correct guess, and then it should consider
+    # the likelyhood of the correct guess.
+
+    # (Number of Correct Guesses).(Likelyhood of Measured Paths that arent max)
+
+    number_of_ones <- length(expectation_vector[expectation_vector == 1])
+    partial_probs <- expectation_vector[expectation_vector != 1]
+
+    log_likelyhood <- sum(log(partial_probs))
+
+    #0.01 and 400 are arbitrary. There just needed to be a senseable decimal
+    #point to optmize around and an input of 0 would equal around 1.
+    sigmoid_logstic_partial_probs <- 1 / (1 + exp(-0.01 * (log_likelyhood + 400)))
+
+    result <- number_of_ones + sigmoid_logstic_partial_probs
+
+    
+    #Optim wants to minimize, so we return the negative of the likelyhood
+    return(-result)
   }
-  
-  # The idea of the result is that is should first priotize the
-  # sheer number of correct guess, and then it should consider
-  # the likelyhood of the correct guess.
 
-  # (Number of Correct Guesses).(Likelyhood of Measured Paths that arent max)
+  nn_table_to_matrix <- function(
+      ref_ontology,
+      nn_table,
+      NUMBER_OF_LABELS
+  ) {
+    
+    list_of_nn_table_colnames <- colnames(nn_table)
+    number_of_paths <- nrow(ref_ontology)
+    number_of_k_neighbors <- nrow(nn_table)
+    
+    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=number_of_paths)
 
-  number_of_ones <- length(expectation_vector[expectation_vector == 1])
-  partial_probs <- expectation_vector[expectation_vector != 1]
+    #This chunk will calculate the ratio of paths for unique label in cds_ref
+    ratio_of_paths <- sapply(1:number_of_paths, function(j) {
+      path <- ref_ontology[j, ]
 
-  log_likelyhood <- sum(log(partial_probs))
-
-  #0.01 and 400 are arbitrary. There just needed to be a senseable decimal
-  #point to optmize around and an input of 0 would equal around 1.
-  sigmoid_logstic_partial_probs <- 1 / (1 + exp(-0.01 * (log_likelyhood + 400)))
-
-  result <- number_of_ones + sigmoid_logstic_partial_probs
-
-  
-  #Optim wants to minimize, so we return the negative of the likelyhood
-  return(-result)
-}
-
-nn_table_to_matrix <- function(
-    ref_ontology,
-    nn_table,
-    NUMBER_OF_LABELS
-) {
-  
-  list_of_nn_table_colnames <- colnames(nn_table)
-  number_of_paths <- nrow(ref_ontology)
-  number_of_k_neighbors <- nrow(nn_table)
-  
-  ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=number_of_paths)
-
-  #This chunk will calculate the ratio of paths for unique label in cds_ref
-  ratio_of_paths <- sapply(1:number_of_paths, function(j) {
-    path <- ref_ontology[j, ]
-
-    ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
-      sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / number_of_k_neighbors
+      ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
+        sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / number_of_k_neighbors
+      })
+      return(ratios)
     })
-    return(ratios)
-  })
-  
-  return(ratio_of_paths)
-}
-
-
-# This function has the end goal of maximizing the priors
-# The way it does this is that it first calcuates the likelyhood
-# that we observe the dataset we have.
-# Then it uses the optim function to find the priors that maximize
-# the likelyhood of the dataset we have.
-train_priors_on_reference <- function(
-    priors,
-    query_search,
-    ref_coldata,
-    ref_column_names,
-    ref_ontology,
-    maxeval,
-    NUMBER_OF_REFERENCE_CELLS,
-    NUMBER_OF_LABELS
-) {
-  
-  #List of matrixs that report the ratio of labels reporting that path
-  list_of_ref_cells_paths <- vector("list", length = NUMBER_OF_REFERENCE_CELLS)
-  vector_of_measured_index <- vector("numeric", length = NUMBER_OF_REFERENCE_CELLS)
-  
-  current_index_in_list <- 0
-  
-  for(i in 1:NUMBER_OF_REFERENCE_CELLS) {
     
-    #Search for k-NN
-    ref_neighbors <- query_search[['nn.idx']][i,]
-    nn_table <- ref_coldata[ref_neighbors, ref_column_names]
-    
-    #Get the measured path and the index of that path in the ontology
-    measured <- nn_table[1,]
-    measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
-
-    #Trunicate nn table to not inculde measured
-    nn_table <- nn_table[-1,]
-
-    #Turn the nn_table to a matrix of ratios of paths
-    ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
-
-    #Make sure measured path isnt all zeros (cant take log of 0) or all 1's (arent important in optmizing)
-    if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
-    
-    #Add the ratio of paths to the list
-    current_index_in_list <- current_index_in_list + 1
-
-    vector_of_measured_index[current_index_in_list] <- measured_index
-    list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
+    return(ratio_of_paths)
   }
 
-  #Priors dont matter, transfer at sub level
-  if(current_index_in_list == 0) return(c(rep(0, NUMBER_OF_LABELS - 1), 1))
 
-  #Trunciate the list of ref cells paths to avoid NA's
-  list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
-  vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
-
-  optim_result_GN <- nloptr(
-    opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
-
-    x0 = priors,
-    lb = rep(0, NUMBER_OF_LABELS),
-    ub = rep(1, NUMBER_OF_LABELS),
-
-    eval_f = expectation,
-    data = list_of_ref_cells_paths, 
-    measured_index = vector_of_measured_index
-  )
-
-  #Normalize the priors
-  priors <- optim_result_GN$solution
-  priors <- abs(priors)
-  priors <- priors / sum(priors)
-
-  optim_result_LN <- nloptr(
-    opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
-
-    x0 = priors,
-    lb = rep(0, NUMBER_OF_LABELS),
-    ub = rep(1, NUMBER_OF_LABELS),
-
-    eval_f = expectation,
-    data = list_of_ref_cells_paths, 
-    measured_index = vector_of_measured_index
-  )
-
-  priors <- optim_result_LN$solution
-  priors <- abs(priors)
-  priors <- priors / sum(priors)
-
-  return(priors) 
-}
-
-# Calculate the posteriors. Using the priors that we have optimized
-# mutiply that by the ratio of paths for each cell. and report the max
-# as the label for that cell.
-calculate_posteriors_and_label <- function(
-    priors,
-    query_search,
-    ref_column_names,
-    ref_coldata,
-    ref_ontology,
-    NUMBER_OF_LABELS,
-    NUMBER_OF_QUERY_CELLS,
-    NUMBER_OF_REFERENCE_CELLS,
-    NUMBER_OF_CELLS
-) {
-  
-  cds_nn <- data.frame(matrix(NA, nrow=NUMBER_OF_QUERY_CELLS, ncol=NUMBER_OF_LABELS))
-  list_of_final_paths <- vector("list", length = NUMBER_OF_QUERY_CELLS)
-  
-  for(i in 1:NUMBER_OF_QUERY_CELLS) {
+  # This function has the end goal of maximizing the priors
+  # The way it does this is that it first calcuates the likelyhood
+  # that we observe the dataset we have.
+  # Then it uses the optim function to find the priors that maximize
+  # the likelyhood of the dataset we have.
+  train_priors_on_reference <- function(
+      priors,
+      query_search,
+      ref_coldata,
+      ref_column_names,
+      ref_ontology,
+      maxeval,
+      NUMBER_OF_REFERENCE_CELLS,
+      NUMBER_OF_LABELS
+  ) {
     
-    nn_table <- ref_coldata[query_search[['nn.idx']][i + NUMBER_OF_REFERENCE_CELLS,], ref_column_names]
+    #List of matrixs that report the ratio of labels reporting that path
+    list_of_ref_cells_paths <- vector("list", length = NUMBER_OF_REFERENCE_CELLS)
+    vector_of_measured_index <- vector("numeric", length = NUMBER_OF_REFERENCE_CELLS)
     
-    #Calculate the ratio of paths for each label
-    ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
+    current_index_in_list <- 0
     
-    posteriors <- priors %*% ratio_of_paths
-    
-    #Get path name
-    index_of_max <- which.max(posteriors)
-    final_path <- ref_ontology[index_of_max, ]
-    
-    #Add it to the list
-    list_of_final_paths[[i]] <- final_path
+    for(i in 1:NUMBER_OF_REFERENCE_CELLS) {
+      
+      #Search for k-NN
+      ref_neighbors <- query_search[['nn.idx']][i,]
+      nn_table <- ref_coldata[ref_neighbors, ref_column_names]
+
+      #If all the neighbors are the same, skip (arent important in optmizing)
+      if(dim(unique(nn_table))[1] == 1) next
+      
+      #Get the measured path and the index of that path in the ontology
+      measured <- nn_table[1,]
+      nn_table <- nn_table[-1,]
+
+      #Make sure measured path isnt all zeros (cant take log of 0)
+      if(nrow(merge(measured, nn_table)) == 0) next
+
+      #Get index of path in ontology
+      measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
+
+      #Turn the nn_table to a matrix of ratios of paths
+      ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
+
+      #Later check just in case
+      if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
+      
+      #Add the ratio of paths to the list
+      current_index_in_list <- current_index_in_list + 1
+
+      vector_of_measured_index[current_index_in_list] <- measured_index
+      list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
+    }
+
+    #Priors dont matter, transfer at sub level
+    if(current_index_in_list == 0) return(c(rep(0, NUMBER_OF_LABELS - 1), 1))
+
+    #Trunciate the list of ref cells paths to avoid NA's
+    list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
+    vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
+
+    optim_result_GN <- nloptr(
+      opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
+
+      x0 = priors,
+      lb = rep(0, NUMBER_OF_LABELS),
+      ub = rep(1, NUMBER_OF_LABELS),
+
+      eval_f = expectation,
+      data = list_of_ref_cells_paths, 
+      measured_index = vector_of_measured_index
+    )
+
+    #Normalize the priors
+    priors <- optim_result_GN$solution
+    priors <- abs(priors)
+    priors <- priors / sum(priors)
+
+    optim_result_LN <- nloptr(
+      opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
+
+      x0 = priors,
+      lb = rep(0, NUMBER_OF_LABELS),
+      ub = rep(1, NUMBER_OF_LABELS),
+
+      eval_f = expectation,
+      data = list_of_ref_cells_paths, 
+      measured_index = vector_of_measured_index
+    )
+
+    priors <- optim_result_LN$solution
+    priors <- abs(priors)
+    priors <- priors / sum(priors)
+
+    #Print likelyhood of dataset out of length of list_of_ref_cells_paths
+    print(paste("Likelyhood of dataset:", optim_result_LN$objective, "/", length(list_of_ref_cells_paths)))
+
+    return(priors) 
   }
-  
-  #Convert list to dataframe
-  cds_nn <- Reduce(rbind, list_of_final_paths)
-  
-  return(cds_nn)
-}
 
-# k-NN table -> dataframe of labels.
-# Train priors on the reference cds
-# Calculate the posteriors and label the query cds
-get_nn_ontology_cell_labels <- function(
-    query_data,
-    query_search,
-    ref_coldata,
-    ref_column_names,
-    maxeval
-) {
-  
-  #Get the number of labels and cells
-  NUMBER_OF_CELLS <- nrow(query_data)
-  NUMBER_OF_REFERENCE_CELLS <- nrow(ref_coldata)
-  NUMBER_OF_QUERY_CELLS <- NUMBER_OF_CELLS - NUMBER_OF_REFERENCE_CELLS
-  NUMBER_OF_LABELS <- length(ref_column_names)
-  
-  ref_ontology <- ref_coldata[, ref_column_names]
-  ref_ontology <- unique(ref_ontology)
-  ref_ontology <- as.data.frame(ref_ontology)
-  
-  priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
-  
-  # Report back an optimized prior by training it on 
-  # a k-NN search of the reference data set.
-  priors <- train_priors_on_reference(
-    priors, 
-    query_search, 
-    ref_coldata, 
-    ref_column_names, 
-    ref_ontology,
-    maxeval,
-    NUMBER_OF_REFERENCE_CELLS, 
-    NUMBER_OF_LABELS
-  )
-
-  for(i in 1:NUMBER_OF_LABELS) {
-    print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
-  }
-  
-  #Use priors to calcuate the posteriors and then find label
-  cds_nn <- calculate_posteriors_and_label(
-    priors, 
-    query_search,
-    ref_column_names,
-    ref_coldata,
-    ref_ontology,
-    NUMBER_OF_LABELS,
-    NUMBER_OF_QUERY_CELLS,
-    NUMBER_OF_REFERENCE_CELLS,
-    NUMBER_OF_CELLS
-  )
-  
-  return(cds_nn)
-}
-
-
-#' @title Transfer ontology labels
-#'
-#' @description Transfer ontology labels from
-#' a reference to a query dataset. To do this,
-#' first, cds_qry and cds_ref are combined into
-#' a combo cds. Then, the combo cds is reduced
-#' using the reduction_method. Using k-NN the combo
-#' cds is compared to cds_ref. 
-#' 
-#' Then, priors for each layer of the ontology is
-#' optimized on the reference data set. The priors
-#' are then used to calculate the posteriors for each
-#' cell in the query data set. Finally, the cell is
-#' assigned a label based on the max posterior.
-#' 
-#' @param cds_query A cell_data_set object. An unkown
-#' set of cells to label
-#' @param cds_ref A cell_data_set object. Know set of
-#' cells to base the labels off of.
-#' @param reduction_method The method used to reduce
-#' the dimensionality of the combo cds. Must be one of
-#' 'UMAP', 'PCA', or 'LSI'.
-#' @param ref_column_names The column names of colData(cds_ref)
-#' that contain the ontology. The order of the column names
-#' must be from most broad to most speficic.
-#' @param query_column_names (Optional) The column names of
-#' colData(cds_qry) that will be affixed to the cell_data_set.
-#' @param transform_models_dir (Optional) The directory path
-#' to the transform models. If NULL, then the transform models
-#' will be loaded from the cds_ref.
-#' @param k The number of nearest neighbors to use in the
-#' k-NN search.
-#' @param nn_control (Optional) A list of parameters to control
-#' the k-NN search.
-#' @param maxeval (Optional) The maximum number of iterations
-#' to use in the optimization of the priors.
-#' @param verbose (Optional) A boolean. If TRUE, then the function
-#' will print out progress messages.
-#' @return A cell_data_set object with the query_column_names
-#' affixed to the colData.
-#' 
-bayesian_ontology_label_transferv3 <- function(
-    cds_query,
-    cds_ref,
+  # Calculate the posteriors. Using the priors that we have optimized
+  # mutiply that by the ratio of paths for each cell. and report the max
+  # as the label for that cell.
+  calculate_posteriors_and_label <- function(
+      priors,
+      query_search,
+      ref_column_names,
+      ref_coldata,
+      ref_ontology,
+      NUMBER_OF_LABELS,
+      NUMBER_OF_QUERY_CELLS,
+      NUMBER_OF_REFERENCE_CELLS,
+      NUMBER_OF_CELLS
+  ) {
     
-    reduction_method = c("UMAP", "PCA", "LSI"), 
-    ref_column_names,
-    query_column_names = ref_column_names,
-    transform_models_dir = NULL,
-    k = 10,
-    maxeval = 500,
-    nn_control = list(),
-    verbose = FALSE
+    cds_nn <- data.frame(matrix(NA, nrow=NUMBER_OF_QUERY_CELLS, ncol=NUMBER_OF_LABELS))
+    list_of_final_paths <- vector("list", length = NUMBER_OF_QUERY_CELLS)
     
-) {
-  
-  assertthat::assert_that(methods::is(cds_query, 'cell_data_set'),
-                          msg= paste0('cds_query parameter is not a cell_data_set'))
-  
-  assertthat::assert_that(methods::is(cds_ref, 'cell_data_set'),
-                          msg= paste0('cds_ref parameter is not a cell_data_set'))
-  
-  assertthat::assert_that(
-    tryCatch(expr = ifelse(match.arg(reduction_method) == "",TRUE, TRUE),
-             error = function(e) FALSE),
-    msg = "reduction_method must be 'UMAP', 'PCA', or 'LSI'")
-  
-  assertthat::assert_that(assertthat::is.count(k))
-  
-  reduction_method <- match.arg(reduction_method)
-  ref_coldata <- as.data.frame(colData(cds_ref))
-  
-  assertthat::assert_that(all(ref_column_names %in% colnames(ref_coldata)),
-                          msg= paste0('ref_column_name \'', ref_column_names, '\' is not in the ref_col_data'))
-  
-  #Added checks:
-  
-  assertthat::assert_that(length(ref_column_names) > 1, 
-                          msg = "Length of ref_column_names must be greater than 1.")
-  
-  assertthat::assert_that(length(ref_column_names) == length(unique(ref_column_names)),
-                          msg = "ref_column_names must be unique.")
-  
-  assertthat::assert_that(length(query_column_names) == length(unique(query_column_names)),
-                          msg = "query_column_names must be unique.")
-  
-  assertthat::assert_that(length(ref_column_names) == length(query_column_names),
-                          msg = "ref_column_names and query_column_names must be the same length.")
-  
-  for(column_name in ref_column_names) {
-    assertthat::assert_that(is.character(ref_coldata[[column_name]]),
-                            msg = paste0('ref_coldata column \'', column_name, '\' is not a character vector'))
+    for(i in 1:NUMBER_OF_QUERY_CELLS) {
+      
+      nn_table <- ref_coldata[query_search[['nn.idx']][i + NUMBER_OF_REFERENCE_CELLS,], ref_column_names]
+      
+      #Calculate the ratio of paths for each label
+      ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
+      
+      posteriors <- priors %*% ratio_of_paths
+      
+      #Get path name
+      index_of_max <- which.max(posteriors)
+      final_path <- ref_ontology[index_of_max, ]
+      
+      #Add it to the list
+      list_of_final_paths[[i]] <- final_path
+    }
+    
+    #Convert list to dataframe
+    cds_nn <- Reduce(rbind, list_of_final_paths)
+    
+    return(cds_nn)
   }
-  
-  
-  if(reduction_method == 'UMAP') {
-    nn_control_default <- list(method='annoy', metric='euclidean', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
-  } else {
-    nn_control_default <- list(method='annoy', metric='cosine', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
+
+  # k-NN table -> dataframe of labels.
+  # Train priors on the reference cds
+  # Calculate the posteriors and label the query cds
+  get_nn_ontology_cell_labels <- function(
+      query_data,
+      query_search,
+      ref_coldata,
+      ref_column_names,
+      maxeval
+  ) {
+    
+    #Get the number of labels and cells
+    NUMBER_OF_CELLS <- nrow(query_data)
+    NUMBER_OF_REFERENCE_CELLS <- nrow(ref_coldata)
+    NUMBER_OF_QUERY_CELLS <- NUMBER_OF_CELLS - NUMBER_OF_REFERENCE_CELLS
+    NUMBER_OF_LABELS <- length(ref_column_names)
+    
+    ref_ontology <- ref_coldata[, ref_column_names]
+    ref_ontology <- unique(ref_ontology)
+    ref_ontology <- as.data.frame(ref_ontology)
+    
+    priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
+    
+    # Report back an optimized prior by training it on 
+    # a k-NN search of the reference data set.
+    priors <- train_priors_on_reference(
+      priors, 
+      query_search, 
+      ref_coldata, 
+      ref_column_names, 
+      ref_ontology,
+      maxeval,
+      NUMBER_OF_REFERENCE_CELLS, 
+      NUMBER_OF_LABELS
+    )
+
+    for(i in 1:NUMBER_OF_LABELS) {
+      print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
+    }
+    
+    #Use priors to calcuate the posteriors and then find label
+    cds_nn <- calculate_posteriors_and_label(
+      priors, 
+      query_search,
+      ref_column_names,
+      ref_coldata,
+      ref_ontology,
+      NUMBER_OF_LABELS,
+      NUMBER_OF_QUERY_CELLS,
+      NUMBER_OF_REFERENCE_CELLS,
+      NUMBER_OF_CELLS
+    )
+    
+    return(cds_nn)
   }
-  
-  
-  # Use set_nn_control to find nn method, which we need in order to select the correct index,
-  # and we may need the index to set the nn_control[['search_k']].
-  nn_control_tmp <- set_nn_control(mode=2,
-                                   nn_control=nn_control,
-                                   nn_control_default=nn_control_default,
-                                   nn_index=NULL,
-                                   k=k,
-                                   verbose=verbose)
-  
-  #To make a nn index with both the reference and query data, we need to combine the cds
-  cds_com <- combine_cds(list(cds_ref, cds_query), keep_reduced_dims = TRUE)
-  cds_com <- load_transform_models(cds_com, directory_path=transform_models_dir)
-  cds_com <- preprocess_cds(cds_com)
-  
-  cds_nn_index <- get_cds_nn_index(cds=cds_com, reduction_method=reduction_method, nn_control_tmp[['method']], verbose=verbose) 
-  
-  cds_reduced_dims <- SingleCellExperiment::reducedDims(cds_com)[[reduction_method]]
-  
-  if(ncol(cds_reduced_dims) != cds_nn_index[['ncol']]) {
-    stop('transfer_cell_labels: reduced dimension matrix and nearest neighbor index dimensions do not match')
+
+
+  #' @title Transfer ontology labels
+  #'
+  #' @description Transfer ontology labels from
+  #' a reference to a query dataset. To do this,
+  #' first, cds_qry and cds_ref are combined into
+  #' a combo cds. Then, the combo cds is reduced
+  #' using the reduction_method. Using k-NN the combo
+  #' cds is compared to cds_ref. 
+  #' 
+  #' Then, priors for each layer of the ontology is
+  #' optimized on the reference data set. The priors
+  #' are then used to calculate the posteriors for each
+  #' cell in the query data set. Finally, the cell is
+  #' assigned a label based on the max posterior.
+  #' 
+  #' @param cds_query A cell_data_set object. An unkown
+  #' set of cells to label
+  #' @param cds_ref A cell_data_set object. Know set of
+  #' cells to base the labels off of.
+  #' @param reduction_method The method used to reduce
+  #' the dimensionality of the combo cds. Must be one of
+  #' 'UMAP', 'PCA', or 'LSI'.
+  #' @param ref_column_names The column names of colData(cds_ref)
+  #' that contain the ontology. The order of the column names
+  #' must be from most broad to most speficic.
+  #' @param query_column_names (Optional) The column names of
+  #' colData(cds_qry) that will be affixed to the cell_data_set.
+  #' @param transform_models_dir (Optional) The directory path
+  #' to the transform models. If NULL, then the transform models
+  #' will be loaded from the cds_ref.
+  #' @param k The number of nearest neighbors to use in the
+  #' k-NN search.
+  #' @param nn_control (Optional) A list of parameters to control
+  #' the k-NN search.
+  #' @param maxeval (Optional) The maximum number of iterations
+  #' to use in the optimization of the priors. Higher means more accurate
+  #' priors, but slower function.
+  #' @param verbose (Optional) A boolean. If TRUE, then the function
+  #' will print out progress messages.
+  #' @return A cell_data_set object with the query_column_names
+  #' affixed to the colData.
+  #' 
+  bayesian_ontology_label_transferv3 <- function(
+      cds_query,
+      cds_ref,
+      
+      reduction_method = c("UMAP", "PCA", "LSI"), 
+      ref_column_names,
+      query_column_names = ref_column_names,
+      transform_models_dir = NULL,
+      k = 10,
+      maxeval = 500,
+      nn_control = list(),
+      verbose = FALSE
+      
+  ) {
+    
+    assertthat::assert_that(methods::is(cds_query, 'cell_data_set'),
+                            msg= paste0('cds_query parameter is not a cell_data_set'))
+    
+    assertthat::assert_that(methods::is(cds_ref, 'cell_data_set'),
+                            msg= paste0('cds_ref parameter is not a cell_data_set'))
+    
+    assertthat::assert_that(
+      tryCatch(expr = ifelse(match.arg(reduction_method) == "",TRUE, TRUE),
+              error = function(e) FALSE),
+      msg = "reduction_method must be 'UMAP', 'PCA', or 'LSI'")
+    
+    assertthat::assert_that(assertthat::is.count(k))
+    
+    reduction_method <- match.arg(reduction_method)
+    ref_coldata <- as.data.frame(colData(cds_ref))
+    
+    assertthat::assert_that(all(ref_column_names %in% colnames(ref_coldata)),
+                            msg= paste0('ref_column_name \'', ref_column_names, '\' is not in the ref_col_data'))
+    
+    #Added checks:
+    
+    assertthat::assert_that(length(ref_column_names) > 1, 
+                            msg = "Length of ref_column_names must be greater than 1.")
+    
+    assertthat::assert_that(length(ref_column_names) == length(unique(ref_column_names)),
+                            msg = "ref_column_names must be unique.")
+    
+    assertthat::assert_that(length(query_column_names) == length(unique(query_column_names)),
+                            msg = "query_column_names must be unique.")
+    
+    assertthat::assert_that(length(ref_column_names) == length(query_column_names),
+                            msg = "ref_column_names and query_column_names must be the same length.")
+    
+    for(column_name in ref_column_names) {
+      assertthat::assert_that(is.character(ref_coldata[[column_name]]),
+                              msg = paste0('ref_coldata column \'', column_name, '\' is not a character vector'))
+    }
+    
+    
+    if(reduction_method == 'UMAP') {
+      nn_control_default <- list(method='annoy', metric='euclidean', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
+    } else {
+      nn_control_default <- list(method='annoy', metric='cosine', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
+    }
+    
+    
+    # Use set_nn_control to find nn method, which we need in order to select the correct index,
+    # and we may need the index to set the nn_control[['search_k']].
+    nn_control_tmp <- set_nn_control(mode=2,
+                                    nn_control=nn_control,
+                                    nn_control_default=nn_control_default,
+                                    nn_index=NULL,
+                                    k=k,
+                                    verbose=verbose)
+    
+    #To make a nn index with both the reference and query data, we need to combine the cds
+    cds_com <- combine_cds(list(cds_ref, cds_query), keep_reduced_dims = TRUE)
+    cds_com <- load_transform_models(cds_com, directory_path=transform_models_dir)
+    cds_com <- preprocess_cds(cds_com)
+    
+    cds_nn_index <- get_cds_nn_index(cds=cds_com, reduction_method=reduction_method, nn_control_tmp[['method']], verbose=verbose) 
+    
+    cds_reduced_dims <- SingleCellExperiment::reducedDims(cds_com)[[reduction_method]]
+    
+    if(ncol(cds_reduced_dims) != cds_nn_index[['ncol']]) {
+      stop('transfer_cell_labels: reduced dimension matrix and nearest neighbor index dimensions do not match')
+    }
+    
+    nn_control <- set_nn_control(mode=2,
+                                nn_control=nn_control,
+                                nn_control_default=nn_control_default,
+                                nn_index=cds_nn_index,
+                                k=k,
+                                verbose=verbose)
+    
+
+    assertthat::assert_that(!is.null(cds_query@reduce_dim_aux[[reduction_method]]),
+                            msg=paste0("Reduction Method '", reduction_method, "' is not in the",
+                                      "loaded model object."))
+    
+    
+    # Search the reference reduction_method space for nearest neighbors
+    # to the query cells.
+    # The cds_reduced_dims contains the query cell coordinates
+    # after projection into the reference space.
+    # The cds@reduce_dim_aux[[reduction_method]] contains the reduction_method
+    # coordinates for the reference data set, which were
+    # loaded using load_transform_models() above.
+    cds_res <- search_nn_index(query_matrix=cds_reduced_dims, nn_index=cds_nn_index,
+                              k=k, nn_control=nn_control, verbose=verbose)
+    
+    cds_nn <- get_nn_ontology_cell_labels(
+      query_data=cds_reduced_dims,
+      query_search=cds_res,
+      ref_coldata=ref_coldata,
+      ref_column_names=ref_column_names,
+      maxeval=maxeval
+    )
+
+    #cds_nn <- check_ontology(cds_nn)
+    #colnames(cds_nn) <- c(query_column_names, "break")
+    #rownames(colData(cds_query)) <- 1:54277
+    #colData(cds_query) <- cbind(colData(cds_query), cds_nn)
+    #plot_cells(cds_query, color_cells_by="break")
+
+    colnames(cds_nn) <- query_column_names
+    
+    colData(cds_query) <- cbind(colData(cds_query), cds_nn)
+    
+    return(cds_query)
   }
-  
-  nn_control <- set_nn_control(mode=2,
-                               nn_control=nn_control,
-                               nn_control_default=nn_control_default,
-                               nn_index=cds_nn_index,
-                               k=k,
-                               verbose=verbose)
-  
-
-  assertthat::assert_that(!is.null(cds_query@reduce_dim_aux[[reduction_method]]),
-                          msg=paste0("Reduction Method '", reduction_method, "' is not in the",
-                                     "loaded model object."))
-  
-  
-  # Search the reference reduction_method space for nearest neighbors
-  # to the query cells.
-  # The cds_reduced_dims contains the query cell coordinates
-  # after projection into the reference space.
-  # The cds@reduce_dim_aux[[reduction_method]] contains the reduction_method
-  # coordinates for the reference data set, which were
-  # loaded using load_transform_models() above.
-  cds_res <- search_nn_index(query_matrix=cds_reduced_dims, nn_index=cds_nn_index,
-                             k=k, nn_control=nn_control, verbose=verbose)
-  
-  cds_nn <- get_nn_ontology_cell_labels(
-    query_data=cds_reduced_dims,
-    query_search=cds_res,
-    ref_coldata=ref_coldata,
-    ref_column_names=ref_column_names,
-    maxeval=maxeval
-  )
-
-  #cds_nn <- check_ontology(cds_nn)
-  #colnames(cds_nn) <- c(query_column_names, "break")
-  #rownames(colData(cds_query)) <- 1:54277
-  #plot_cells(cds_query, color_cells_by="break")
-
-  colnames(cds_nn) <- query_column_names
-  
-  colData(cds_query) <- cbind(colData(cds_query), cds_nn)
-  
-  return(cds_query)
-}
