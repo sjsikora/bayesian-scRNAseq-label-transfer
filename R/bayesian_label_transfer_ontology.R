@@ -336,19 +336,18 @@
   #' @return A cell_data_set object with the query_column_names
   #' affixed to the colData.
   #' 
-  bayesian_ontology_label_transferv3 <- function(
-      cds_query,
-      cds_ref,
-      
-      reduction_method = c("UMAP", "PCA", "LSI"), 
-      ref_column_names,
-      query_column_names = ref_column_names,
-      transform_models_dir = NULL,
-      k = 10,
-      maxeval = 500,
-      nn_control = list(),
-      verbose = FALSE
-      
+  bayesian_ontology_label_transfer <- function(
+    cds_query,
+    cds_ref,
+    
+    reduction_method = c("UMAP", "PCA", "LSI"), 
+    ref_column_names,
+    query_column_names = ref_column_names,
+    transform_models_dir = NULL,
+    k = 10,
+    maxeval = 500,
+    nn_control = list(),
+    verbose = FALSE
   ) {
     
     assertthat::assert_that(methods::is(cds_query, 'cell_data_set'),
