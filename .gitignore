@@ -2,3 +2,6 @@ R/load_data.R
 R/shuffle.R
 R/format_data.R
 .*
+ontology.json
+Rplot.png
+ontology.json
