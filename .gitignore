@@ -7,6 +7,6 @@ sclass_local.Rproj
 *.csv
 .Rproj.user
 .Rhistory
-.Rhistory
 lineage_pap/*
 *.png
+umap_model/*
