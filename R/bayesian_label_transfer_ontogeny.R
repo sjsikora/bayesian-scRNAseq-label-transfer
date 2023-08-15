@@ -3,13 +3,17 @@
   # !!! This is an extension of Maddy Duran's
   # work in label_transfer.R in monocle3 1.3.1 !!!!
 
+  # This function takes in a list of matrices. Each matrix
+  # is a ratio of paths for a cell. The function will
+  # return the summaiton hinge loss of the priors and the ratio of
+  # paths for each cell. Called by train_priors_on_reference.
   hinge_loss <- function(
       x0,
       data,
       measured_index
   ) {
 
-    #Ensure parameters are positive and add up to one
+    #Ensure priors are positive and add up to one
     par <- abs(x0)
     par <- par / sum(par)
     
@@ -25,9 +29,8 @@
       #Soft Max the resulting variables
       prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
 
-      # Loss is calcuated in the distance between the maxium path and
+      # Loss is calcuated by the distance between the maxium path and
       # the measured path.
-
       expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
 
       #If there is a tie, return 0.5. We do not want ties.
@@ -53,13 +56,13 @@
   ) {
     
     list_of_nn_table_colnames <- colnames(nn_table)
-    NUMBER_OF_ontogeny_PATHS <- nrow(ref_ontogeny)
+    NUMBER_OF_ONTOGENY_PATHS <- nrow(ref_ontogeny)
     NUMBER_OF_NEAREST_NEIGHBORS <- nrow(nn_table)
     
-    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ontogeny_PATHS)
+    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ONTOGENY_PATHS)
 
     #This chunk will calculate the ratio of paths for unique label in cds_ref
-    ratio_of_paths <- sapply(1:NUMBER_OF_ontogeny_PATHS, function(j) {
+    ratio_of_paths <- sapply(1:NUMBER_OF_ONTOGENY_PATHS, function(j) {
       path <- ref_ontogeny[j, ]
 
       ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
@@ -109,7 +112,7 @@
       measured <- nn_table[1,]
       nn_table <- nn_table[-1,]
 
-      #Make sure measured path isnt all zeros (cant take log of 0)
+      #Make sure measured path isnt all zeros no reason to optimize
       if(nrow(merge(measured, nn_table)) == 0) next
 
       #Get index of path in ontogeny
@@ -117,9 +120,6 @@
 
       #Turn the nn_table to a matrix of ratios of paths
       ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
-
-      #Later check just in case
-      if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
       
       #Add the ratio of paths to the list
       current_index_in_list <- current_index_in_list + 1
