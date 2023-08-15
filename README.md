@@ -1,23 +1,23 @@
 # scRNA-seq Bayesian Label Transfer
 
-As a part of my summer 2023 intership at the Trapnell Lab, I developed a novel way to transfer cell-labels from a reference monocle3 cell data set to a query cell data set respecting ontology.
+During my summer 2023 internship at the Trapnell Lab, I developed a novel method to transfer cell labels from a reference monocle3 cell dataset to a query cell dataset while respecting ontology.
 
-Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing the gene expression space of single cells. However, they can generate large datasets with many cells, making it laborious to label each cell manually. **Label transfer algorithms** are used to quickly annotate cells in scRNA-seq datasets. Yet, to my knowledge, none of the current algorithms incorporate cell-ontology information. In addition, these label transfer enforce a strict ontology to label cells, which in some cases does not reflect real biology.
+Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing the gene expression profiles of individual cells. However, they often produce extensive datasets with numerous cells, making manual cell labeling a labor-intensive task. **Label transfer algorithms** are employed to rapidly annotate cells in scRNA-seq datasets. However, to the best of my knowledge, none of the existing algorithms incorporate cell ontology information. Furthermore, these label transfer methods enforce a strict ontology for cell labeling, which may not always accurately represent actual biological.
 
-The key difference between this repo's label transfer and all the others is the addition of **priors** for each layer of a cell ontology. The introduction of these priors ensure that this information is inculded in the classification of a query cell and have the capiabilty of transfering cells that "break" the strict ontology.
+The primary distinction between the label transfer technique in this repository and others lies in the integration of **priors** for each layer of a cell ontology. Introducing these priors ensures that this information is taken into account during the classification of a query cell and allows for the transfer of cells that may not conform to the strict ontology.
 
 ## Algorithm
 
-- The reference and query cell data sets are reduced into coordinate space. 
-- A k-nearest-neighbor framework is built to compare both reference and query data sets to reference data set. 
-- Priors are initialized and trained on reference:
-    - For every reference cell, retrieve k-NN of that reference cell to k other reference cells.
-    - Transform k-NN table to a ontology matrix where every column is a path down cell ontology, every row is a cell, and every entry is the (number of k-NN reporting that label)/k
-    - To train the priors, calculate the hinge-loss* of a given prior and refine.
-- Once priors are optimized on the reference cell data set, retrieve k-NN of the query cell data to reference cell data set.
-- Transform k-NN table to a ontology matrix.
-- Multiply priors and ontology matrix and report back the maxium path.
+- The reference and query cell datasets are reduced into a coordinate space.
+- A k-nearest-neighbor framework is established to compare both the reference and query datasets to the reference dataset.
+- Priors are initialized and trained on the reference dataset:
+    - For every reference cell, retrieve the k-nearest neighbors of that cell among k other reference cells.
+    - Transform the k-nearest neighbor table into an ontology matrix, where each column represents a path within the cell ontology, each row represents a cell, and each entry indicates the proportion of k-nearest neighbors that report that label divided by k.
+    - To train the priors, calculate the hinge loss* of a given prior and refine accordingly.
+- Once the priors are optimized on the reference cell dataset, retrieve the k-nearest neighbors of the query cell dataset with respect to the reference cell dataset.
+- Transform the k-nearest neighbor table into an ontology matrix.
+- Multiply the priors matrix by the ontology matrix and report the path with the highest value.
 
 ## *Note on Hinge Loss:
 
-A big point of diffculty in this project was the loss function. I settled on hinge loss because of its demphasis on increasing the margin of correct anwsers. While this may seem counter intutive, the result of methods that emphasize increasing margins are priors of 0 0 0 1.  
+A major challenge in this project was designing an effective loss function. I settled on the hinge loss due to its emphasis on increasing the margin between correct answers. While this might seem counterintuitive, methods that prioritize increasing margins often result in priors like [0, 0, 0, 1].
