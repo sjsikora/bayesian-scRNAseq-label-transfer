@@ -1,18 +1,9 @@
   # Sam Sikora Summer Student 2023
   #
-  # !!! A large amount of this file was built on top of Maddy Duran's
+  # !!! This is an extension of Maddy Duran's
   # work in label_transfer.R in monocle3 1.3.1 !!!!
 
-  # This function evaluates priors based on the reference data set.
-  # It is called by the function train_priors_on_reference. The
-  # function will return a negative value that is the "likelyhood" of
-  # seeing the data we given priors. This number is formatted as
-  # - (Number of correctly identifyied paths).(sigmoid(log(prod(
-  # all measured paths that were not identified))))
-  # The idea of this result is that is should first priotize the
-  # sheer number of correct guess, and then it should consider
-  # the likelyhood of the correct guess.
-  cross_entropy_loss <- function(
+  hinge_loss <- function(
       x0,
       data,
       measured_index
@@ -42,7 +33,7 @@
       #If there is a tie, return 0.5. We do not want ties.
       if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
 
-      expectation_vector[i] <- log(expectation)
+      expectation_vector[i] <- expectation
     }
 
     return(-sum(expectation_vector))
@@ -153,7 +144,7 @@
       lb = rep(0, NUMBER_OF_LABELS),
       ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = cross_entropy_loss,
+      eval_f = hinge_loss,
       data = list_of_ref_cells_paths, 
       measured_index = vector_of_measured_index
     )
@@ -171,7 +162,7 @@
       lb = rep(0, NUMBER_OF_LABELS),
       ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = cross_entropy_loss,
+      eval_f = hinge_loss,
       data = list_of_ref_cells_paths, 
       measured_index = vector_of_measured_index
     )
