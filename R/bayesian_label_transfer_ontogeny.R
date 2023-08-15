@@ -50,26 +50,26 @@
 
 
   # This function takes in a k-NN dataframe. It then returns
-  # a matrix where each coloumn is a path down the ontology,
+  # a matrix where each coloumn is a path down the ontogeny,
   # each row is a layer, and every entry is how many times
   # that label was seen in the k-NN dataframe. Called by
   # train_priors_on_reference and calculate_posteriors_and_label.
 
   nn_table_to_matrix <- function(
-      ref_ontology,
+      ref_ontogeny,
       nn_table,
       NUMBER_OF_LABELS
   ) {
     
     list_of_nn_table_colnames <- colnames(nn_table)
-    NUMBER_OF_ONTOLOGY_PATHS <- nrow(ref_ontology)
+    NUMBER_OF_ontogeny_PATHS <- nrow(ref_ontogeny)
     NUMBER_OF_NEAREST_NEIGHBORS <- nrow(nn_table)
     
-    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ONTOLOGY_PATHS)
+    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ontogeny_PATHS)
 
     #This chunk will calculate the ratio of paths for unique label in cds_ref
-    ratio_of_paths <- sapply(1:NUMBER_OF_ONTOLOGY_PATHS, function(j) {
-      path <- ref_ontology[j, ]
+    ratio_of_paths <- sapply(1:NUMBER_OF_ontogeny_PATHS, function(j) {
+      path <- ref_ontogeny[j, ]
 
       ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
         sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / NUMBER_OF_NEAREST_NEIGHBORS
@@ -93,7 +93,7 @@
       query_search,
       ref_coldata,
       ref_column_names,
-      ref_ontology,
+      ref_ontogeny,
       maxeval,
       NUMBER_OF_REFERENCE_CELLS,
       NUMBER_OF_LABELS
@@ -114,18 +114,18 @@
       #If all the neighbors are the same, skip (arent important in optmizing)
       if(dim(unique(nn_table))[1] == 1) next
       
-      #Get the measured path and the index of that path in the ontology
+      #Get the measured path and the index of that path in the ontogeny
       measured <- nn_table[1,]
       nn_table <- nn_table[-1,]
 
       #Make sure measured path isnt all zeros (cant take log of 0)
       if(nrow(merge(measured, nn_table)) == 0) next
 
-      #Get index of path in ontology
-      measured_index <- which(apply(ref_ontology, 1, function(row) all(row == measured)))
+      #Get index of path in ontogeny
+      measured_index <- which(apply(ref_ontogeny, 1, function(row) all(row == measured)))
 
       #Turn the nn_table to a matrix of ratios of paths
-      ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
+      ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
 
       #Later check just in case
       if(all(ratio_of_paths[, measured_index] == 0) || all(ratio_of_paths[, measured_index] == 1)) next
@@ -192,7 +192,7 @@
       query_search,
       ref_column_names,
       ref_coldata,
-      ref_ontology,
+      ref_ontogeny,
       NUMBER_OF_LABELS,
       NUMBER_OF_QUERY_CELLS,
       NUMBER_OF_REFERENCE_CELLS,
@@ -207,13 +207,13 @@
       nn_table <- ref_coldata[query_search[['nn.idx']][i + NUMBER_OF_REFERENCE_CELLS,], ref_column_names]
       
       #Calculate the ratio of paths for each label
-      ratio_of_paths <- nn_table_to_matrix(ref_ontology, nn_table, NUMBER_OF_LABELS)
+      ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
       
       posteriors <- priors %*% ratio_of_paths
       
       #Get path name
       index_of_max <- which.max(posteriors)
-      final_path <- ref_ontology[index_of_max, ]
+      final_path <- ref_ontogeny[index_of_max, ]
       
       #Add it to the list
       list_of_final_paths[[i]] <- final_path
@@ -228,7 +228,7 @@
   # k-NN table -> dataframe of labels.
   # Train priors on the reference cds
   # Calculate the posteriors and label the query cds
-  get_nn_ontology_cell_labels <- function(
+  get_nn_ontogeny_cell_labels <- function(
       query_data,
       query_search,
       ref_coldata,
@@ -242,9 +242,9 @@
     NUMBER_OF_QUERY_CELLS <- NUMBER_OF_CELLS - NUMBER_OF_REFERENCE_CELLS
     NUMBER_OF_LABELS <- length(ref_column_names)
     
-    ref_ontology <- ref_coldata[, ref_column_names]
-    ref_ontology <- unique(ref_ontology)
-    ref_ontology <- as.data.frame(ref_ontology)
+    ref_ontogeny <- ref_coldata[, ref_column_names]
+    ref_ontogeny <- unique(ref_ontogeny)
+    ref_ontogeny <- as.data.frame(ref_ontogeny)
     
     priors <- rep((1/NUMBER_OF_LABELS), NUMBER_OF_LABELS)
     
@@ -255,7 +255,7 @@
       query_search, 
       ref_coldata, 
       ref_column_names, 
-      ref_ontology,
+      ref_ontogeny,
       maxeval,
       NUMBER_OF_REFERENCE_CELLS, 
       NUMBER_OF_LABELS
@@ -271,7 +271,7 @@
       query_search,
       ref_column_names,
       ref_coldata,
-      ref_ontology,
+      ref_ontogeny,
       NUMBER_OF_LABELS,
       NUMBER_OF_QUERY_CELLS,
       NUMBER_OF_REFERENCE_CELLS,
@@ -282,16 +282,16 @@
   }
 
 
-  #' @title Transfer ontology labels
+  #' @title Transfer ontogeny labels
   #'
-  #' @description Transfer ontology labels from
+  #' @description Transfer ontogeny labels from
   #' a reference to a query dataset. To do this,
   #' first, cds_qry and cds_ref are combined into
   #' a combo cds. Then, the combo cds is reduced
   #' using the reduction_method. Using k-NN the combo
   #' cds is compared to cds_ref. 
   #' 
-  #' Then, priors for each layer of the ontology is
+  #' Then, priors for each layer of the ontogeny is
   #' optimized on the reference data set. The priors
   #' are then used to calculate the posteriors for each
   #' cell in the query data set. Finally, the cell is
@@ -305,7 +305,7 @@
   #' the dimensionality of the combo cds. Must be one of
   #' 'UMAP', 'PCA', or 'LSI'.
   #' @param ref_column_names The column names of colData(cds_ref)
-  #' that contain the ontology. The order of the column names
+  #' that contain the ontogeny. The order of the column names
   #' must be from most broad to most speficic.
   #' @param query_column_names (Optional) The column names of
   #' colData(cds_qry) that will be affixed to the cell_data_set.
@@ -324,7 +324,7 @@
   #' @return A cell_data_set object with the query_column_names
   #' affixed to the colData.
   #' 
-  bayesian_ontology_label_transfer <- function(
+  bayesian_ontogeny_label_transfer <- function(
     cds_query,
     cds_ref,
     
@@ -429,7 +429,7 @@
     cds_res <- search_nn_index(query_matrix=cds_reduced_dims, nn_index=cds_nn_index,
                               k=k, nn_control=nn_control, verbose=verbose)
     
-    cds_nn <- get_nn_ontology_cell_labels(
+    cds_nn <- get_nn_ontogeny_cell_labels(
       query_data=cds_reduced_dims,
       query_search=cds_res,
       ref_coldata=ref_coldata,
@@ -437,7 +437,7 @@
       maxeval=maxeval
     )
 
-    #cds_nn <- check_ontology(cds_nn)
+    #cds_nn <- check_ontogeny(cds_nn)
     #colnames(cds_nn) <- c(query_column_names, "break")
     #rownames(colData(cds_query)) <- 1:54277
     #colData(cds_query) <- cbind(colData(cds_query), cds_nn)
