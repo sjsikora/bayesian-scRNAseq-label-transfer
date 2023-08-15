@@ -8,4 +8,16 @@ The key difference between this repo's label transfer and all the others is the 
 
 ## Algorithm
 
-First, the reference and query cell data sets are reduced into coordinate space. 
+- The reference and query cell data sets are reduced into coordinate space. 
+- A k-nearest-neighbor framework is built to compare both reference and query data sets to reference data set. 
+- Priors are initialized and trained on reference:
+    - For every reference cell, retrieve k-NN of that reference cell to k other reference cells.
+    - Transform k-NN table to a ontology matrix where every column is a path down cell ontology, every row is a cell, and every entry is the (number of k-NN reporting that label)/k
+    - To train the priors, calculate the hinge-loss* of a given prior and refine.
+- Once priors are optimized on the reference cell data set, retrieve k-NN of the query cell data to reference cell data set.
+- Transform k-NN table to a ontology matrix.
+- Multiply priors and ontology matrix and report back the maxium path.
+
+## *Note on Hinge Loss:
+
+A big point of diffculty in this project was the loss function. I settled on hinge loss because of its demphasis on increasing the margin of correct anwsers. While this may seem counter intutive, the result of methods that emphasize increasing margins are priors of 0 0 0 1.  
