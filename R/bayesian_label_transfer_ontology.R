@@ -12,7 +12,7 @@
   # The idea of this result is that is should first priotize the
   # sheer number of correct guess, and then it should consider
   # the likelyhood of the correct guess.
-  expectation <- function(
+  cross_entropy_loss <- function(
       x0,
       data,
       measured_index
@@ -30,31 +30,22 @@
       #Mutiply priors and normalize
       matrix <- data[[i]]
       prob_of_paths <- par %*% matrix
-      prob_of_paths <- prob_of_paths / sum(prob_of_paths)
 
-      #Likelyhood function, returns 1 if
+      #Soft Max the resulting variables
+      prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
+
+      # Loss is calcuated in the distance between the maxium path and
+      # the measured path.
+
       expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
 
       #If there is a tie, return 0.5. We do not want ties.
       if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
-    
-      expectation_vector[i] <- expectation
+
+      expectation_vector[i] <- log(expectation)
     }
 
-    # (Number of Correct Guesses).(Likelyhood of Measured Paths that arent max)
-    number_of_ones <- length(expectation_vector[expectation_vector == 1])
-    partial_probs <- expectation_vector[expectation_vector != 1]
-
-    log_likelyhood <- sum(log(partial_probs))
-
-    #0.01 and 400 are arbitrary. There just needed to be a senseable decimal
-    #point to optmize around and an input of 0 would equal around 1.
-    sigmoid_logstic_partial_probs <- 1 / (1 + exp(-0.01 * (log_likelyhood + 400)))
-
-    result <- number_of_ones + sigmoid_logstic_partial_probs
-    
-    #Optim wants to minimize, so we return the negative of the likelyhood
-    return(-result)
+    return(-sum(expectation_vector))
   }
 
 
@@ -162,7 +153,7 @@
       lb = rep(0, NUMBER_OF_LABELS),
       ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = expectation,
+      eval_f = cross_entropy_loss,
       data = list_of_ref_cells_paths, 
       measured_index = vector_of_measured_index
     )
@@ -180,7 +171,7 @@
       lb = rep(0, NUMBER_OF_LABELS),
       ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = expectation,
+      eval_f = cross_entropy_loss,
       data = list_of_ref_cells_paths, 
       measured_index = vector_of_measured_index
     )
@@ -189,9 +180,6 @@
     priors <- optim_result_LN$solution
     priors <- abs(priors)
     priors <- priors / sum(priors)
-
-    #Print likelyhood of dataset out of length of list_of_ref_cells_paths
-    print(paste("Likelyhood of dataset:", (optim_result_LN$objective * (-1)), "/", length(list_of_ref_cells_paths)))
 
     return(priors) 
   }
