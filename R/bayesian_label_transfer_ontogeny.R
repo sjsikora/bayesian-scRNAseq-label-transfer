@@ -383,14 +383,14 @@ train_priors_on_reference <- function(
                                     verbose=verbose)
     
     # To make a nn index with both the reference and query data, we need to combine the cds
-    # However, the are two important things to ensure. First, the column names of the
+    # However, the are two important things to ensure. First, the column names in colData of the
     # reference and query data must be the same. Second, every ID of a cell in that
     # data is unique.
 
-    cds_ref_temp <- cds_ref
+    cds_ref
     cds_query_temp <- cds_query
 
-    colData(cds_ref_temp) <- colData(cds_ref_temp)[, ref_column_names]
+    colData(cds_ref) <- colData(cds_ref)[, ref_column_names]
     for(col in ref_column_names) {
       colData(cds_query_temp)[[col]] <- NULL
       colData(cds_query_temp)[[col]] <- rep(NA, ncol(cds_query_temp))
@@ -398,13 +398,15 @@ train_priors_on_reference <- function(
     colData(cds_query_temp) <- colData(cds_query_temp)[, ref_column_names]
 
     rownames(colData(cds_query_temp)) <- paste0("cds_qry", 1:dim(cds_query_temp)[2])
-    rownames(colData(cds_ref_temp)) <- paste0("cell_ref", 1:dim(cds_ref_temp)[2])
-    colnames(cds_query_temp) <- paste0("cds_qry", 1:dim(cds_query_temp)[2])
-    colnames(cds_ref_temp) <- paste0("cell_ref", 1:dim(cds_ref_temp)[2])
+    rownames(colData(cds_ref)) <- paste0("cell_ref", 1:dim(cds_ref)[2])
 
-    cds_com <- combine_cds(list(cds_ref_temp, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE)
+    cds_com <- combine_cds(list(cds_ref, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE)
+
+    # Combinding this  
+    rm(cds_ref, cds_query_temp)
+
     cds_com <- load_transform_models(cds_com, directory_path=transform_models_dir)
-    cds_com <- preprocess_cds(cds_com)
+    #cds_com <- preprocess_cds(cds_com)
     
     cds_nn_index <- get_cds_nn_index(cds=cds_com, reduction_method=reduction_method, nn_control_tmp[['method']], verbose=verbose) 
     

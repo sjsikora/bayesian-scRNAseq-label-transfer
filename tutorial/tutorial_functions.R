@@ -107,9 +107,6 @@ check_ontogeny <- function(
 
 
         if (!all(strict_ontogeny == assigned_ontogeny)) {
-            print(paste0('Cell ', i, ' has a mismatch'))
-            print(paste0('Strict: ', strict_ontogeny))
-            print(paste0('Assigned: ', assigned_ontogeny))
 
             if(assigned_ontogeny[4] == 'Mono') {
                 number_of_brokenmono_cells <- number_of_brokenmono_cells + 1

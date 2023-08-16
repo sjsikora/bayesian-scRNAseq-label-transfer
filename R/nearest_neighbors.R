@@ -1,4 +1,4 @@
-# Functions that support nearest neighbors use.
+# Functions that support nearest neighbors use from monocle3.
 
 # Sam Sikora Summer 2023: Modifyed for orthology label transfer use
 # I am not working within the monocle3 package therefore any function
@@ -10,9 +10,6 @@
 # 'nn_control_annoy_cosine: list(method='annoy', metric='cosine', n_trees=50, M=48, ef_construction=200, ef=150, grain_size=1, cores=1)
 # 'monocle3_hnsw_index_version':  1
 # 'monocle3_annoy_index_version': 2)
-#
-
-
 
 
 # Check whether nn index exists and is consistent with matrix and parameters.
