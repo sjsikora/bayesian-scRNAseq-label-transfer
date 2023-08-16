@@ -36,6 +36,9 @@ hinge_loss <- function(
         loss_for_cell <- loss_for_cell + max(0, prob_of_paths[j] - prob_of_paths[measured_index[i]] + 1)
       }
 
+      #Heavly pentalize ties
+      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) loss_for_cell <- length(prob_of_paths) * 25
+
       expectation_vector[i] <- loss_for_cell
     }
 
@@ -387,7 +390,6 @@ train_priors_on_reference <- function(
     # reference and query data must be the same. Second, every ID of a cell in that
     # data is unique.
 
-    cds_ref
     cds_query_temp <- cds_query
 
     colData(cds_ref) <- colData(cds_ref)[, ref_column_names]
@@ -400,7 +402,9 @@ train_priors_on_reference <- function(
     rownames(colData(cds_query_temp)) <- paste0("cds_qry", 1:dim(cds_query_temp)[2])
     rownames(colData(cds_ref)) <- paste0("cell_ref", 1:dim(cds_ref)[2])
 
-    cds_com <- combine_cds(list(cds_ref, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE)
+    # This has a warning of wanting a coloumn "gene_short_name" for certain functions
+    # but it is not needed for our purposes
+    suppressWarnings(cds_com <- combine_cds(list(cds_ref, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE))
 
     # Combinding this  
     rm(cds_ref, cds_query_temp)
