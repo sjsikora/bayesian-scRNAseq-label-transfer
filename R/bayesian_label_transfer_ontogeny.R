@@ -7,7 +7,7 @@
 # is a ratio of paths for a cell. The function will
 # return the summation hinge loss of the priors and the ratio of
 # paths for each cell. Called by train_priors_on_reference.
-hinge_loss <- function(
+cross_entropy <- function(
     x0,
     data,
     measured_index
@@ -29,15 +29,11 @@ hinge_loss <- function(
       # Soft Max the resulting variables
       prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
 
-      # Multi Class SVM Loss
-      loss_for_cell <- 0
-      for(j in 1:length(prob_of_paths)) {
-        if(j == measured_index[i]) next
-        loss_for_cell <- loss_for_cell + max(0, prob_of_paths[j] - prob_of_paths[measured_index[i]] + 1)
-      }
+      # Cross entropy
+      loss_for_cell <- -log(prob_of_paths[measured_index[i]])
 
-      #Heavly pentalize ties
-      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) loss_for_cell <- length(prob_of_paths) * 25
+      # Heavily pentalize ties
+      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) loss_for_cell <- -log(0.0001)
 
       expectation_vector[i] <- loss_for_cell
     }
@@ -145,7 +141,7 @@ train_priors_on_reference <- function(
         lb = rep(0, NUMBER_OF_LABELS),
         ub = rep(1, NUMBER_OF_LABELS),
 
-        eval_f = hinge_loss,
+        eval_f = cross_entropy,
         data = list_of_ref_cells_paths, 
         measured_index = vector_of_measured_index
     )
@@ -163,7 +159,7 @@ train_priors_on_reference <- function(
         lb = rep(0, NUMBER_OF_LABELS),
         ub = rep(1, NUMBER_OF_LABELS),
 
-        eval_f = hinge_loss,
+        eval_f = cross_entropy,
         data = list_of_ref_cells_paths, 
         measured_index = vector_of_measured_index
     )
