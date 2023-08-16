@@ -22,24 +22,24 @@ hinge_loss <- function(
     
     for(i in 1:length(data)) {
 
-        # Multiply priors and normalize
-        matrix <- data[[i]]
-        prob_of_paths <- par %*% matrix
+      # Multiply priors and normalize
+      matrix <- data[[i]]
+      prob_of_paths <- par %*% matrix
 
-        # Soft Max the resulting variables
-        prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
+      # Soft Max the resulting variables
+      prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
 
-        # Loss is calculated by the distance between the maximum path and
-        # the measured path.
-        expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+      # Multi Class SVM Loss
+      loss_for_cell <- 0
+      for(j in 1:length(prob_of_paths)) {
+        if(j == measured_index[i]) next
+        loss_for_cell <- loss_for_cell + max(0, prob_of_paths[j] - prob_of_paths[measured_index[i]] + 1)
+      }
 
-        # If there is a tie, return 0.5. We do not want ties.
-        if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
-
-        expectation_vector[i] <- expectation
+      expectation_vector[i] <- loss_for_cell
     }
 
-    return(-sum(expectation_vector))
+    return(sum(expectation_vector))
 }
 
 
