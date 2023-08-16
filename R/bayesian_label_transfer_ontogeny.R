@@ -248,10 +248,6 @@ train_priors_on_reference <- function(
       NUMBER_OF_REFERENCE_CELLS, 
       NUMBER_OF_LABELS
     )
-
-    for(i in 1:NUMBER_OF_LABELS) {
-      print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
-    }
     
     #Use priors to calcuate the posteriors and then find label
     cds_nn <- calculate_posteriors_and_label(
