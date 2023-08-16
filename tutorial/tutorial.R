@@ -18,6 +18,9 @@ rownames(cds) <- gene_names
 cell_barcodes <- readLines('/Users/samsikora/Desktop/Trapnell_Lab/sclassification/bayesian-scRNAseq-label-transfer/cds_data/lineage_pap/downloaded_10x/GSM4185643_stateFate_inVivo_cell_barcodes.txt')
 colnames(cds) <- cell_barcodes
 
+# Remove all undifferntiated and progenitor cells
+cds <- cds[, !is.na(colData(cds)$Cell.type.annotation) & !(colData(cds)$Cell.type.annotation %in% c("Undifferentiated", "Prog"))]
+
 # Split the data into a query and reference dataset by spliting by librarys
 librarys <- colData(cds)$Library
 unique_librarys <- unique(librarys)
@@ -27,7 +30,7 @@ ref_librarys <- unique_librarys[!unique_librarys %in% qry_librarys]
 cds_qry <- cds[, !is.na(colData(cds)$Library) & colData(cds)$Library %in% qry_librarys]
 cds_ref <- cds[, !is.na(colData(cds)$Library) & colData(cds)$Library %in% ref_librarys]
 
-#Estimate new size factors
+# Estimate new size factors
 cds_ref <- estimate_size_factors(cds_ref)
 cds_qry <- estimate_size_factors(cds_qry)
 
@@ -61,15 +64,19 @@ cds_qry <- bayesian_ontogeny_label_transfer(
     verbose = FALSE
 )
 
-# Determine what cells have broken ontogeny in both datasets
+# Determine what cells have broken ontogeny in both datasets.
 cds_qry_transfered_labels <- as.data.frame(colData(cds_qry)[, c("bay_L1", "bay_L2", "bay_L3", "bay_L4")])
-colData(cds_query) <- cbind(colData(cds_query), check_ontogeny(cds_transfered_labels))
+breakage <- check_ontogeny(cds_qry_transfered_labels)
+colData(cds_qry) <- cbind(colData(cds_qry), breakage)
+
 
 cds_ref_measured_labels <- as.data.frame(colData(cds_ref)[, c("L1", "L2", "L3", "L4")])
-colData(cds_ref) <- cbind(colData(cds_ref), check_ontogeny(cds_measured_labels))
+breakage <- check_ontogeny(cds_ref_measured_labels)
+colData(cds_ref) <- cbind(colData(cds_ref), breakage)
 
 #To plot, ensure the rownames are unqiue
 rownames(colData(cds_query)) <- paste0(rownames(colData(cds_query)), "_", 1:54277)
+rownames(colData(cds_ref)) <- paste0(rownames(colData(cds_query)), "_", 1:116731)
 
 #Recreate plots:
 
@@ -77,10 +84,10 @@ rownames(colData(cds_query)) <- paste0(rownames(colData(cds_query)), "_", 1:5427
 plot_cells(cds_ref, color_cells_by = "Cell.type.annotation")
 
 #Plot simulated cell_type breakage in cds_ref
-plot_cells(cds_ref, color_cells_by = "break")
+plot_cells(cds_ref, color_cells_by = "breakage")
 
 #Plot estimated cell_types in cds_qry
 plot_cells(cds_qry, color_cells_by = "bay_L4")
 
 #Plot simulated cell_type breakage in cds_qry
-plot_cells(cds_qry, color_cells_by = "break")
+plot_cells(cds_qry, color_cells_by = "breakage")
