@@ -6,6 +6,8 @@ Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing t
 
 The primary distinction between the label transfer technique in this repository and others lies in the integration of **priors** for each layer of a cell ontogeny. Introducing these priors ensures that this information is taken into account during the classification of a query cell and allows for the transfer of cells that may not conform to the strict ontogeny.
 
+## Benchmark
+
 ## Algorithm
 
 - The reference and query cell datasets are reduced into a coordinate space.

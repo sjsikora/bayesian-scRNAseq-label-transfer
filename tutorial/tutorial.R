@@ -39,12 +39,17 @@ cds_qry <- estimate_size_factors(cds_qry)
 
 cds_ref <- preprocess_cds(cds_ref)
 cds_ref <- reduce_dimension(cds_ref, build_nn_index=TRUE)
+save_transform_models(cds_ref, 'cds_ref_tutorial_model')
 
-cds_qry <- load_transform_models(cds_qry, 'cds_ref_R_D_models')
+
+cds_qry <- load_transform_models(cds_qry, 'cds_ref_tutorial_model')
 cds_qry <- preprocess_transform(cds_qry)
 cds_qry <- reduce_dimension_transform(cds_qry)
 
 list_of_cds <- assign_layer_labels(cds_ref, cds_qry, monoProb = 0.3, basoProb = 0.3)
+
+cds_ref <- list_of_cds[[1]]
+cds_qry <- list_of_cds[[2]]
 
 # Run the main function to transfer the labels
 cds_qry <- bayesian_ontogeny_label_transfer(
@@ -54,7 +59,7 @@ cds_qry <- bayesian_ontogeny_label_transfer(
     reduction_method = "UMAP",
     ref_column_names = c("L1", "L2", "L3", "L4"),
     query_column_names = c("bay_L1", "bay_L2", "bay_L3", "bay_L4"),
-    transform_models_dir = 'cds_ref_R_D_models',
+    transform_models_dir = 'cds_ref_tutorial_model',
     k = 30,
     maxeval = 500,
     nn_control = list(),
