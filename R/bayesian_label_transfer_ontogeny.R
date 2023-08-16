@@ -1,170 +1,168 @@
-  # Sam Sikora Summer Student 2023
-  #
-  # !!! This is an extension of Maddy Duran's
-  # work in label_transfer.R in monocle3 1.3.1 !!!!
+# Sam Sikora Summer Student 2023
+#
+# !!! This is an extension of Maddy Duran's
+# work in label_transfer.R in monocle3 1.3.1 !!!!
 
-  # This function takes in a list of matrices. Each matrix
-  # is a ratio of paths for a cell. The function will
-  # return the summaiton hinge loss of the priors and the ratio of
-  # paths for each cell. Called by train_priors_on_reference.
-  hinge_loss <- function(
-      x0,
-      data,
-      measured_index
-  ) {
+# This function takes in a list of matrices. Each matrix
+# is a ratio of paths for a cell. The function will
+# return the summation hinge loss of the priors and the ratio of
+# paths for each cell. Called by train_priors_on_reference.
+hinge_loss <- function(
+    x0,
+    data,
+    measured_index
+) {
 
-    #Ensure priors are positive and add up to one
+    # Ensure priors are positive and add up to one
     par <- abs(x0)
     par <- par / sum(par)
     
-    #Create vector to store the likelyhood of each path
+    # Create vector to store the likelihood of each path
     expectation_vector <- vector("numeric", length = length(data))
     
     for(i in 1:length(data)) {
 
-      #Mutiply priors and normalize
-      matrix <- data[[i]]
-      prob_of_paths <- par %*% matrix
+        # Multiply priors and normalize
+        matrix <- data[[i]]
+        prob_of_paths <- par %*% matrix
 
-      #Soft Max the resulting variables
-      prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
+        # Soft Max the resulting variables
+        prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
 
-      # Loss is calcuated by the distance between the maxium path and
-      # the measured path.
-      expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+        # Loss is calculated by the distance between the maximum path and
+        # the measured path.
+        expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
 
-      #If there is a tie, return 0.5. We do not want ties.
-      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
+        # If there is a tie, return 0.5. We do not want ties.
+        if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
 
-      expectation_vector[i] <- expectation
+        expectation_vector[i] <- expectation
     }
 
     return(-sum(expectation_vector))
-  }
+}
 
 
-  # This function takes in a k-NN dataframe. It then returns
-  # a matrix where each coloumn is a path down the ontogeny,
-  # each row is a layer, and every entry is how many times
-  # that label was seen in the k-NN dataframe. Called by
-  # train_priors_on_reference and calculate_posteriors_and_label.
-
-  nn_table_to_matrix <- function(
-      ref_ontogeny,
-      nn_table,
-      NUMBER_OF_LABELS
-  ) {
+# This function takes in a k-NN dataframe. It then returns
+# a matrix where each column is a path down the ontogeny,
+# each row is a layer, and every entry is how many times
+# that label was seen in the k-NN dataframe. Called by
+# train_priors_on_reference and calculate_posteriors_and_label.
+nn_table_to_matrix <- function(
+    ref_ontogeny,
+    nn_table,
+    NUMBER_OF_LABELS
+) {
     
     list_of_nn_table_colnames <- colnames(nn_table)
     NUMBER_OF_ONTOGENY_PATHS <- nrow(ref_ontogeny)
     NUMBER_OF_NEAREST_NEIGHBORS <- nrow(nn_table)
     
-    ratio_of_paths <- matrix(0, nrow=NUMBER_OF_LABELS, ncol=NUMBER_OF_ONTOGENY_PATHS)
+    ratio_of_paths <- matrix(0, nrow = NUMBER_OF_LABELS, ncol = NUMBER_OF_ONTOGENY_PATHS)
 
-    #This chunk will calculate the ratio of paths for unique label in cds_ref
+    # This chunk will calculate the ratio of paths for each unique label in cds_ref
     ratio_of_paths <- sapply(1:NUMBER_OF_ONTOGENY_PATHS, function(j) {
-      path <- ref_ontogeny[j, ]
+        path <- ref_ontogeny[j, ]
 
-      ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
-        sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / NUMBER_OF_NEAREST_NEIGHBORS
-      })
-      return(ratios)
+        ratios <- sapply(1:NUMBER_OF_LABELS, function(h) {
+            sum(nn_table[[list_of_nn_table_colnames[h]]] == path[[colnames(path)[h]]]) / NUMBER_OF_NEAREST_NEIGHBORS
+        })
+        return(ratios)
     })
     
     return(ratio_of_paths)
-  }
+}
 
 
-  # This function has the end goal of maximizing the priors
-  # on the reference data set. The first part of the function
-  # will setup the data so it can used to evalute the priors.
-  # The second part of the function will first globally
-  # optimize the priors, then use a local optmizer to fine
-  # tune the priors. The function will return the optimized
-  # priors.
-  train_priors_on_reference <- function(
-      priors,
-      query_search,
-      ref_coldata,
-      ref_column_names,
-      ref_ontogeny,
-      maxeval,
-      NUMBER_OF_REFERENCE_CELLS,
-      NUMBER_OF_LABELS
-  ) {
+# This function has the end goal of maximizing the priors
+# on the reference data set. The first part of the function
+# will set up the data so it can be used to evaluate the priors.
+# The second part of the function will first globally
+# optimize the priors, then use a local optimizer to fine-tune
+# the priors. The function will return the optimized priors.
+train_priors_on_reference <- function(
+    priors,
+    query_search,
+    ref_coldata,
+    ref_column_names,
+    ref_ontogeny,
+    maxeval,
+    NUMBER_OF_REFERENCE_CELLS,
+    NUMBER_OF_LABELS
+) {
     
-    #List of matrixs that report the ratio of labels reporting that path
+    # List of matrices that report the ratio of labels reporting that path
     list_of_ref_cells_paths <- vector("list", length = NUMBER_OF_REFERENCE_CELLS)
     vector_of_measured_index <- vector("numeric", length = NUMBER_OF_REFERENCE_CELLS)
     
     current_index_in_list <- 0
     
     for(i in 1:NUMBER_OF_REFERENCE_CELLS) {
-      
-      #Search for k-NN
-      ref_neighbors <- query_search[['nn.idx']][i,]
-      nn_table <- ref_coldata[ref_neighbors, ref_column_names]
+        
+        # Search for k-NN
+        ref_neighbors <- query_search[['nn.idx']][i,]
+        nn_table <- ref_coldata[ref_neighbors, ref_column_names]
 
-      #If all the neighbors are the same, skip (arent important in optmizing)
-      if(dim(unique(nn_table))[1] == 1) next
-      
-      #Get the measured path and the index of that path in the ontogeny
-      measured <- nn_table[1,]
-      nn_table <- nn_table[-1,]
+        # If all the neighbors are the same, skip (aren't important in optimizing)
+        if(dim(unique(nn_table))[1] == 1) next
+        
+        # Get the measured path and the index of that path in the ontogeny
+        measured <- nn_table[1,]
+        nn_table <- nn_table[-1,]
 
-      #Make sure measured path isnt all zeros no reason to optimize
-      if(nrow(merge(measured, nn_table)) == 0) next
+        # Make sure the measured path isn't all zeros, no reason to optimize
+        if(nrow(merge(measured, nn_table)) == 0) next
 
-      #Get index of path in ontogeny
-      measured_index <- which(apply(ref_ontogeny, 1, function(row) all(row == measured)))
+        # Get index of path in ontogeny
+        measured_index <- which(apply(ref_ontogeny, 1, function(row) all(row == measured)))
 
-      #Turn the nn_table to a matrix of ratios of paths
-      ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
-      
-      #Add the ratio of paths to the list
-      current_index_in_list <- current_index_in_list + 1
+        # Turn the nn_table into a matrix of ratios of paths
+        ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
+        
+        # Add the ratio of paths to the list
+        current_index_in_list <- current_index_in_list + 1
 
-      vector_of_measured_index[current_index_in_list] <- measured_index
-      list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
+        vector_of_measured_index[current_index_in_list] <- measured_index
+        list_of_ref_cells_paths[[current_index_in_list]] <- ratio_of_paths
     }
 
-    # If there were no cells that were not all 0's or all 1's just transfer
-    # at the most speficic label.
+    # If there were no cells that were not all 0's or all 1's, just transfer
+    # the most specific label.
     if(current_index_in_list == 0) return(c(rep(0, NUMBER_OF_LABELS - 1), 1))
 
-    #Trunciate the list of ref cells paths to avoid NA's
+    # Truncate the list of ref cells paths to avoid NA's
     list_of_ref_cells_paths <- list_of_ref_cells_paths[1:current_index_in_list]
     vector_of_measured_index <- vector_of_measured_index[1:current_index_in_list]
 
-    #Globally optimize the priors
+    # Globally optimize the priors
     optim_result_GN <- nloptr(
-      opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
+        opts = list("algorithm"="NLOPT_GN_ESCH", "xtol_rel"=1.0e-4, "maxeval"=maxeval),
 
-      x0 = priors,
-      lb = rep(0, NUMBER_OF_LABELS),
-      ub = rep(1, NUMBER_OF_LABELS),
+        x0 = priors,
+        lb = rep(0, NUMBER_OF_LABELS),
+        ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = hinge_loss,
-      data = list_of_ref_cells_paths, 
-      measured_index = vector_of_measured_index
+        eval_f = hinge_loss,
+        data = list_of_ref_cells_paths, 
+        measured_index = vector_of_measured_index
     )
 
-    #Normalize the priors
+    # Normalize the priors
     priors <- optim_result_GN$solution
     priors <- abs(priors)
     priors <- priors / sum(priors)
 
-    #Locally optimize the priors
+    # Locally optimize the priors
     optim_result_LN <- nloptr(
-      opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
+        opts = list("algorithm"="NLOPT_LN_BOBYQA", "xtol_rel"=1.0e-8, "maxeval"=maxeval),
 
-      x0 = priors,
-      lb = rep(0, NUMBER_OF_LABELS),
-      ub = rep(1, NUMBER_OF_LABELS),
+        x0 = priors,
+        lb = rep(0, NUMBER_OF_LABELS),
+        ub = rep(1, NUMBER_OF_LABELS),
 
-      eval_f = hinge_loss,
-      data = list_of_ref_cells_paths, 
-      measured_index = vector_of_measured_index
+        eval_f = hinge_loss,
+        data = list_of_ref_cells_paths, 
+        measured_index = vector_of_measured_index
     )
 
     #Normalize the priors
