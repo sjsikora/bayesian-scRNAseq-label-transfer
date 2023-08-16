@@ -7,7 +7,7 @@
 # is a ratio of paths for a cell. The function will
 # return the summation hinge loss of the priors and the ratio of
 # paths for each cell. Called by train_priors_on_reference.
-hinge_loss <- function(
+cross_entropy <- function(
     x0,
     data,
     measured_index
@@ -22,24 +22,23 @@ hinge_loss <- function(
     
     for(i in 1:length(data)) {
 
-        # Multiply priors and normalize
-        matrix <- data[[i]]
-        prob_of_paths <- par %*% matrix
+      # Multiply priors and normalize
+      matrix <- data[[i]]
+      prob_of_paths <- par %*% matrix
 
-        # Soft Max the resulting variables
-        prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
+      # Soft Max the resulting variables
+      prob_of_paths <- exp(prob_of_paths) / sum(exp(prob_of_paths))
 
-        # Loss is calculated by the distance between the maximum path and
-        # the measured path.
-        expectation <- 1 - (max(prob_of_paths) - prob_of_paths[[measured_index[i]]])
+      # Cross entropy
+      loss_for_cell <- -log(prob_of_paths[measured_index[i]])
 
-        # If there is a tie, return 0.5. We do not want ties.
-        if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) expectation <- 0.5
+      # Heavily pentalize ties
+      if(length(prob_of_paths[prob_of_paths == max(prob_of_paths)]) > 1) loss_for_cell <- -log(0.0001)
 
-        expectation_vector[i] <- expectation
+      expectation_vector[i] <- loss_for_cell
     }
 
-    return(-sum(expectation_vector))
+    return(sum(expectation_vector))
 }
 
 
@@ -142,7 +141,7 @@ train_priors_on_reference <- function(
         lb = rep(0, NUMBER_OF_LABELS),
         ub = rep(1, NUMBER_OF_LABELS),
 
-        eval_f = hinge_loss,
+        eval_f = cross_entropy,
         data = list_of_ref_cells_paths, 
         measured_index = vector_of_measured_index
     )
@@ -160,7 +159,7 @@ train_priors_on_reference <- function(
         lb = rep(0, NUMBER_OF_LABELS),
         ub = rep(1, NUMBER_OF_LABELS),
 
-        eval_f = hinge_loss,
+        eval_f = cross_entropy,
         data = list_of_ref_cells_paths, 
         measured_index = vector_of_measured_index
     )
@@ -249,10 +248,6 @@ train_priors_on_reference <- function(
       NUMBER_OF_REFERENCE_CELLS, 
       NUMBER_OF_LABELS
     )
-
-    for(i in 1:NUMBER_OF_LABELS) {
-      print(paste0("Prior for ", ref_column_names[i], ": ", priors[i]))
-    }
     
     #Use priors to calcuate the posteriors and then find label
     cds_nn <- calculate_posteriors_and_label(
@@ -387,7 +382,6 @@ train_priors_on_reference <- function(
     # reference and query data must be the same. Second, every ID of a cell in that
     # data is unique.
 
-    cds_ref
     cds_query_temp <- cds_query
 
     colData(cds_ref) <- colData(cds_ref)[, ref_column_names]
@@ -400,7 +394,9 @@ train_priors_on_reference <- function(
     rownames(colData(cds_query_temp)) <- paste0("cds_qry", 1:dim(cds_query_temp)[2])
     rownames(colData(cds_ref)) <- paste0("cell_ref", 1:dim(cds_ref)[2])
 
-    cds_com <- combine_cds(list(cds_ref, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE)
+    # This has a warning of wanting a coloumn "gene_short_name" for certain functions
+    # but it is not needed for our purposes
+    suppressWarnings(cds_com <- combine_cds(list(cds_ref, cds_query_temp), keep_reduced_dims = TRUE, cell_names_unique = TRUE))
 
     # Combinding this  
     rm(cds_ref, cds_query_temp)
