@@ -18,7 +18,7 @@ The primary distinction between the label transfer technique in this repository 
 - Priors are initialized and trained on the reference dataset:
     - For every reference cell, retrieve the k-nearest neighbors of that cell among k other reference cells.
     - Transform the k-nearest neighbor table into an ontogeny matrix, where each column represents a path within the cell ontogeny, each row represents a cell, and each entry indicates the proportion of k-nearest neighbors that report that label divided by k.
-    - To train the priors, calculate the hinge loss of a given prior and refine accordingly.
+    - To train the priors, calculate the loss of a given prior and refine accordingly.
 - Once the priors are optimized on the reference cell dataset, retrieve the k-nearest neighbors of the query cell dataset with respect to the reference cell dataset.
 - Transform the k-nearest neighbor table into an ontogeny matrix.
 - Multiply the priors matrix by the ontogeny matrix and report the path with the highest value.
