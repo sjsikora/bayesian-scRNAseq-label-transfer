@@ -23,3 +23,23 @@ The primary distinction between the label transfer technique in this repository 
 ## *Note on Hinge Loss:
 
 A major challenge in this project was designing an effective loss function. I settled on the hinge loss due to its emphasis on increasing the margin between correct answers. While this might seem counterintuitive, methods that prioritize increasing margins often result in priors like [0, 0, 0, 1].
+
+## Citations and Acknowledgements
+
+Monocle3:
+
+Trapnell, C., Cacchiarelli, D., Grimsby, J. et al. The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells. Nat Biotechnol 32, 381–386 (2014). https://doi.org/10.1038/nbt.2859
+
+Qiu, X., Mao, Q., Tang, Y. et al. Reversed graph embedding resolves complex single-cell trajectories. Nat Methods 14, 979–982 (2017). https://doi.org/10.1038/nmeth.4402
+
+Cao, J., Spielmann, M., Qiu, X. et al. The single-cell transcriptional landscape of mammalian organogenesis. Nature 566, 496–502 (2019). https://doi.org/10.1038/s41586-019-0969-x
+
+UMAP:
+
+McInnes et al., (2018). UMAP: Uniform Manifold Approximation and Projection. Journal of Open Source Software, 3(29), 861, https://doi.org/10.21105/joss.00861
+
+Tutorial Data:
+
+Weinreb, C., Rodriguez-Fraticelli, A., Camargo, F. D., & Klein, A. M. (2020). Lineage tracing on transcriptional landscapes links state to fate during differentiation. Science (New York, N.Y.), 367(6479), eaaw3381. https://doi.org/10.1126/science.aaw3381
+
+Weinreb, C., & Klein, A. M. (2020). Lineage reconstruction from clonal correlations. Proceedings of the National Academy of Sciences - PNAS, 117(29), 17041-17048. https://doi.org/10.1073/pnas.2000238117
