@@ -44,10 +44,9 @@ cds_qry <- load_transform_models(cds_qry, 'cds_ref_tutorial_model')
 cds_qry <- preprocess_transform(cds_qry)
 cds_qry <- reduce_dimension_transform(cds_qry)
 
-# Simulate ontogney breakage and label the cells
+# Simulate ontogeny breakage and label the cells
 list_of_cds <- assign_layer_labels(cds_ref, cds_qry, monoProb = 0.3, basoProb = 0.3)
 cds_ref <- list_of_cds[[1]]
-cds_qry <- list_of_cds[[2]]
 
 # Run the main function to transfer the labels
 cds_qry <- bayesian_ontogeny_label_transfer(
