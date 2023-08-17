@@ -127,3 +127,10 @@ check_ontogeny <- function(
 
     return(ontogenyTrack)
 }
+
+count_number_of_correct_specific_labels <- function(cds_qry) {
+    correct_labels <- cds_qry$Cell.type.annotation
+    assigned_labels <- cds_qry$bay_L4
+
+    return(sum(correct_labels == assigned_labels)/length(correct_labels))
+}

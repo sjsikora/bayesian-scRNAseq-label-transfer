@@ -91,4 +91,4 @@ plot_cells(cds_qry, color_cells_by = "bay_L4")
 #Plot simulated cell_type breakage in cds_qry
 plot_cells(cds_qry, color_cells_by = "breakage")
 
-
+paste0("Percent of correct labels", count_number_of_correct_specific_labels(cds_qry) * 100, "%")
