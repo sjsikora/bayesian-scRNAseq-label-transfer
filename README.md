@@ -2,7 +2,7 @@
 
 During my summer 2023 internship at the Trapnell Lab, I developed a novel method to transfer cell labels from a reference [monocle3](https://github.com/cole-trapnell-lab/monocle3) cell dataset to a query cell dataset while respecting ontogeny.
 
-Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing the gene expression profiles of individual cells. However, they often produce extensive datasets with numerous cells, making manual cell labeling a labor-intensive task. **Label transfer algorithms** are employed to rapidly annotate cells in scRNA-seq datasets. However, to the best of my knowledge, none of the existing algorithms incorporate cell ontogeny information. Furthermore, these label transfer methods enforce a strict ontogeny for cell labeling, which may not always accurately represent actual biological.
+Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing the gene expression profiles of individual cells. However, they often produce extensive datasets with numerous cells, making manual cell labeling a labor-intensive task. **Label transfer algorithms** are employed to rapidly annotate cells in scRNA-seq datasets. However, to the best of my knowledge, none of the existing algorithms incorporate cell ontogeny information. Moreover, these methods enforce strict ontogeny constraints for cell labeling, which may not accurately represent the true biological context.
 
 The primary distinction between the label transfer technique in this repository and others lies in the integration of **priors** for each layer of a cell ontogeny. Introducing these priors ensures that this information is taken into account during the classification of a query cell and allows for the transfer of cells that may not conform to the strict ontogeny.
 
@@ -13,9 +13,7 @@ CLiNC, not only reconstructs a cell ontogeny but also detected cross-tree transi
 <img width="400" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/b3fa6a32-76de-4485-ba1b-c7581cc9cbd2">
 
 
-To see if this algorithm was on the right track, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset. The cross-tree transitions were simulated by random chance. Finally, the reference and the query were run through the main function. 
-
-
+To assess this algorithm's ability to transfer cross-tree transisitions in a query, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset with cross-tree transitions simulated by random chance (30%). Finally, the reference and the query were run through the main function. 
 
 <details>
     <summary>Reference cell data set plotted by measured cell type:</summary>
