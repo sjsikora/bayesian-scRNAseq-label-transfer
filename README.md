@@ -10,14 +10,16 @@ The primary distinction between the label transfer technique in this repository 
 In a paper by Weinreb and Klein (2020), the group developed a computational tool, CLiNC, to learn cell fate choices, or a cell ontogeny, from single-cell clonal barcoding. In their paper, they utilized CLiNC on a published hematopoiesis scRNAseq dataset provided by Weinreb, Rodriguez-Fraticelli, Camargo, and Klein (2020).
 
 CLiNC, not only reconstructs a cell ontogeny but also detected cross-tree transition:
-<img width="680" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/b3fa6a32-76de-4485-ba1b-c7581cc9cbd2">
+<img width="200" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/b3fa6a32-76de-4485-ba1b-c7581cc9cbd2">
 
 
 To see if this algorithm was on the right track, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset. The cross-tree transitions were simulated by random chance. Finally, the reference and the query were run through the main function. 
 
 
 ![cds_ref_cell_type](https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/e8c88218-92eb-4c1a-9566-2fd18a040ff2)
-![cds_ref_breakage](https://![cds_qry_cell_type](https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02)
+![cds_ref_breakage](https://
+
+![cds_qry_cell_type](https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02)
 github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c)
 ![cds_qry_breakage](https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/78076d6f-26cc-43f2-be02-5972020781e5)
 
