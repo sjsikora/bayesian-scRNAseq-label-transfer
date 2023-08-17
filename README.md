@@ -20,14 +20,12 @@ To see if this algorithm was on the right track, the same scRNAseq dataset was i
 <details>
     <summary>Reference cell data set plotted by measured cell type:</summary>
         <img width="600" alt="cds_ref_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/e8c88218-92eb-4c1a-9566-2fd18a040ff2">
-    <summary> test</summary>
-        test2
+</details>
+<details>
+    <summary>Reference cell data set plotted by simulated cross-tree transitions:</summary>
+        <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c">
 </details>
 
-
-
-
-<img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c">
 
 <img width="600" alt="cds_qry_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02">
 
