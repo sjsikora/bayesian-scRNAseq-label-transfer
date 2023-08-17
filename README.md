@@ -33,6 +33,10 @@ To assess this algorithm's ability to transfer cross-tree transitions in a query
         <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f76754dc-4b7b-4163-a2e2-bab0187c8083">
 </details>
 
+Results:
+- The algorithm was able to correctly identify 99.12% of the query cell types.
+- It detected 215 / 4766 Mono cell and 9 / 1188 Baso cell cross-tree transitions.
+
 ## Algorithm
 
 - The reference and query cell datasets are reduced into a coordinate space.
