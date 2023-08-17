@@ -10,18 +10,19 @@ The primary distinction between the label transfer technique in this repository 
 In a paper by Weinreb and Klein (2020), the group developed a computational tool, CLiNC, to learn cell fate choices, or a cell ontogeny, from single-cell clonal barcoding. In their paper, they utilized CLiNC on a published hematopoiesis scRNAseq dataset provided by Weinreb, Rodriguez-Fraticelli, Camargo, and Klein (2020).
 
 CLiNC, not only reconstructs a cell ontogeny but also detected cross-tree transition:
-<img width="400" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/b3fa6a32-76de-4485-ba1b-c7581cc9cbd2">
+<img width="400" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/d012c3cc-42fb-456a-a9f6-7bc1bfed9e98">
 
 
 To assess this algorithm's ability to transfer cross-tree transisitions in a query, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset with cross-tree transitions simulated by random chance (30%). Finally, the reference and the query were run through the main function. 
 
 <details>
     <summary>Reference cell data set plotted by measured cell type:</summary>
-        <img width="600" alt="cds_ref_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/e8c88218-92eb-4c1a-9566-2fd18a040ff2">
+        <img width="600" alt="cds_ref_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f4105040-2ec5-4016-b956-d10260a85748">
+
 </details>
 <details>
     <summary>Reference cell data set plotted by simulated cross-tree transitions:</summary>
-        <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c">
+        <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f76754dc-4b7b-4163-a2e2-bab0187c8083">
 </details>
 <details>
     <summary>Query cell data set plotted by predicted cell type:</summary>
@@ -29,7 +30,7 @@ To assess this algorithm's ability to transfer cross-tree transisitions in a que
 </details>
 <details>
     <summary>Query cell data set plotted by predicted cross-tree transitions:</summary>
-        <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/78076d6f-26cc-43f2-be02-5972020781e5">
+        <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/ad049d85-c5b8-4d11-9215-b9f8e1336dbf">
 </details>
 
 The plots showcase this algorithm's ability to transfer ontology breakage into the query dataset.
