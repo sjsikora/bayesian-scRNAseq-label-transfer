@@ -7,8 +7,11 @@ Single-cell RNA sequencing (scRNA-seq) assays are powerful tools for analyzing t
 The primary distinction between the label transfer technique in this repository and others lies in the integration of **priors** for each layer of a cell ontogeny. Introducing these priors ensures that this information is taken into account during the classification of a query cell and allows for the transfer of cells that may not conform to the strict ontogeny.
 
 ## Benchmark
+In a paper by Weinreb and Klein (2020) the group developed a computational tool, CLiNC, to learn cell fate choices, or a cell ontogeny, from single cell clonal barcoding. In their paper, they ultized CLiNC on to a published hematopoiesis scRNAseq dataset provide by Weinreb, Rodriguez-Fraticelli, Camargo, and Klein (2020).
 
+With CLiNC, not only reconstruct a cell ontogeny, but also detect cross-tree transition:
 
+To see if this algorithm was on the right track, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by librarys into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset. The cross-tree transitions were simulated by random chance. Finally, the reference and the query were ran through the main function. 
 
 
 ## Algorithm
