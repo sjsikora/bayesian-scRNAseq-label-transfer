@@ -22,15 +22,15 @@ To assess this algorithm's ability to transfer cross-tree transisitions in a que
 </details>
 <details>
     <summary>Reference cell data set plotted by simulated cross-tree transitions:</summary>
-        <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f76754dc-4b7b-4163-a2e2-bab0187c8083">
+        <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/ad049d85-c5b8-4d11-9215-b9f8e1336dbf">
 </details>
 <details>
     <summary>Query cell data set plotted by predicted cell type:</summary>
-        <img width="600" alt="cds_qry_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02">
+        <img width="600" alt="cds_qry_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/2e98fa0f-167c-488a-a86f-24839a9ce90c">
 </details>
 <details>
     <summary>Query cell data set plotted by predicted cross-tree transitions:</summary>
-        <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/ad049d85-c5b8-4d11-9215-b9f8e1336dbf">
+        <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f76754dc-4b7b-4163-a2e2-bab0187c8083">
 </details>
 
 The plots showcase this algorithm's ability to transfer ontology breakage into the query dataset.
