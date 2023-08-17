@@ -15,7 +15,17 @@ CLiNC, not only reconstructs a cell ontogeny but also detected cross-tree transi
 
 To see if this algorithm was on the right track, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset. The cross-tree transitions were simulated by random chance. Finally, the reference and the query were run through the main function. 
 
-<img width="600" alt="cds_ref_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/e8c88218-92eb-4c1a-9566-2fd18a040ff2">
+
+
+<details>
+    <summary>Reference cell data set plotted by measured cell type:</summary>
+        <img width="600" alt="cds_ref_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/e8c88218-92eb-4c1a-9566-2fd18a040ff2">
+    <summary> test</summary>
+        test2
+</details>
+
+
+
 
 <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c">
 
