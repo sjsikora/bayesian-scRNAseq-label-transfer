@@ -11,3 +11,4 @@ figures/*
 .Rproj.user
 *.png
 bayesian-scRNAseq-label-transfer.Rproj
+cds_ref_tutorial_model/*
