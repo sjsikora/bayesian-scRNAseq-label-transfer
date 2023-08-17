@@ -75,8 +75,8 @@ breakage <- check_ontogeny(cds_ref_measured_labels)
 colData(cds_ref) <- cbind(colData(cds_ref), breakage)
 
 #To plot, ensure the rownames are unqiue
-rownames(colData(cds_query)) <- paste0(rownames(colData(cds_query)), "_", 1:54277)
-rownames(colData(cds_ref)) <- paste0(rownames(colData(cds_query)), "_", 1:116731)
+rownames(colData(cds_qry)) <- paste0(rownames(colData(cds_qry)), "_", 1:54277)
+rownames(colData(cds_ref)) <- paste0(rownames(colData(cds_ref)), "_", 1:84241)
 
 #Recreate plots:
 
@@ -91,3 +91,5 @@ plot_cells(cds_qry, color_cells_by = "bay_L4")
 
 #Plot simulated cell_type breakage in cds_qry
 plot_cells(cds_qry, color_cells_by = "breakage")
+
+

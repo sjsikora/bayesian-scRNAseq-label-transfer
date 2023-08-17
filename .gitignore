@@ -7,3 +7,7 @@ Rplot.png
 ontology.json
 cds_data/*
 tutorial/cds_ref_tutorial_model/*
+figures/*
+.Rproj.user
+*.png
+bayesian-scRNAseq-label-transfer.Rproj
