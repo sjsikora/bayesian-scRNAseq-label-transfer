@@ -34,6 +34,8 @@ To see if this algorithm was on the right track, the same scRNAseq dataset was i
         <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/78076d6f-26cc-43f2-be02-5972020781e5">
 </details>
 
+The plots showcase this algorithm's ability to transfer ontology breakage into the query dataset.
+
 
 ## Algorithm
 
