@@ -13,7 +13,7 @@ CLiNC, not only reconstructs a cell ontogeny but also detected cross-tree transi
 <img width="400" alt="image" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/d012c3cc-42fb-456a-a9f6-7bc1bfed9e98">
 
 
-To assess this algorithm's ability to transfer cross-tree transisitions in a query, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitors cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset with cross-tree transitions simulated by random chance (30%). Finally, the reference and the query were run through the main function. 
+To assess this algorithm's ability to transfer cross-tree transitions in a query, the same scRNAseq dataset was imported into monocle3. Undifferentiated and progenitor cells were removed. The dataset was split by libraries into a reference and query data set. Since the scRNAseq only annotated the cells by cell type, a cell ontogeny was applied to the reference cell dataset with cross-tree transitions simulated by random chance (30%). Finally, the reference and the query were run through the main function. 
 
 <details>
     <summary>Reference cell data set plotted by measured cell type:</summary>
@@ -32,9 +32,6 @@ To assess this algorithm's ability to transfer cross-tree transisitions in a que
     <summary>Query cell data set plotted by predicted cross-tree transitions:</summary>
         <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/f76754dc-4b7b-4163-a2e2-bab0187c8083">
 </details>
-
-The plots showcase this algorithm's ability to transfer ontology breakage into the query dataset.
-
 
 ## Algorithm
 
