@@ -25,11 +25,15 @@ To see if this algorithm was on the right track, the same scRNAseq dataset was i
     <summary>Reference cell data set plotted by simulated cross-tree transitions:</summary>
         <img width="600" alt="cds_ref_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/1591b69b-3a68-4a49-a15b-84d058826b1c">
 </details>
+<details>
+    <summary>Query cell data set plotted by predicted cell type:</summary>
+        <img width="600" alt="cds_qry_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02">
+</details>
+<details>
+    <summary>Query cell data set plotted by predicted cross-tree transitions:</summary>
+        <img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/78076d6f-26cc-43f2-be02-5972020781e5">
+</details>
 
-
-<img width="600" alt="cds_qry_cell_type" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/0f2ffc01-c5cd-4979-8bdc-42815aae1d02">
-
-<img width="600" alt="cds_qry_breakage" src="https://github.com/sjsikora/bayesian-scRNAseq-label-transfer/assets/20007305/78076d6f-26cc-43f2-be02-5972020781e5">
 
 ## Algorithm
 
