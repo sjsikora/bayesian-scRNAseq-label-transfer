@@ -5,8 +5,8 @@
 
 # This function takes in a list of matrices. Each matrix
 # is a ratio of paths for a cell. The function will
-# return the summation hinge loss of the priors and the ratio of
-# paths for each cell. Called by train_priors_on_reference.
+# return the summation of the cross entropory loss of the priors.
+# Called by train_priors_on_reference.
 cross_entropy <- function(
     x0,
     data,
@@ -59,7 +59,8 @@ nn_table_to_matrix <- function(
     
     ratio_of_paths <- matrix(0, nrow = NUMBER_OF_LABELS, ncol = NUMBER_OF_ONTOGENY_PATHS)
 
-    # This chunk will calculate the ratio of paths for each unique label in cds_ref
+    # This chunk will calculate for every ontogeny path detected,
+    # how many times that path was seen in the k-NN dataframe.
     ratio_of_paths <- sapply(1:NUMBER_OF_ONTOGENY_PATHS, function(j) {
         path <- ref_ontogeny[j, ]
 
@@ -112,7 +113,7 @@ train_priors_on_reference <- function(
         # Make sure the measured path isn't all zeros, no reason to optimize
         if(nrow(merge(measured, nn_table)) == 0) next
 
-        # Get index of path in ontogeny
+        # Get index of the measured path in ontogeny
         measured_index <- which(apply(ref_ontogeny, 1, function(row) all(row == measured)))
 
         # Turn the nn_table into a matrix of ratios of paths
@@ -174,7 +175,7 @@ train_priors_on_reference <- function(
 
   # Calculate the posteriors. Using the priors that we have optimized
   # mutiply that by the ratio of paths for each cell. and report the max
-  # as the label for that cell.
+  # of the result as the label for that cell.
   calculate_posteriors_and_label <- function(
       priors,
       query_search,
@@ -192,28 +193,28 @@ train_priors_on_reference <- function(
     
     for(i in 1:NUMBER_OF_QUERY_CELLS) {
       
+      # Get nearest neighbors 
       nn_table <- ref_coldata[query_search[['nn.idx']][i + NUMBER_OF_REFERENCE_CELLS,], ref_column_names]
       
-      #Calculate the ratio of paths for each label
+      # Calculate the ratio of paths for each label
       ratio_of_paths <- nn_table_to_matrix(ref_ontogeny, nn_table, NUMBER_OF_LABELS)
       
       posteriors <- priors %*% ratio_of_paths
       
-      #Get path name
+      # Get path name
       index_of_max <- which.max(posteriors)
       final_path <- ref_ontogeny[index_of_max, ]
       
-      #Add it to the list
+      # Add it to the list
       list_of_final_paths[[i]] <- final_path
     }
     
-    #Convert list to dataframe
+    # Convert list to dataframe
     cds_nn <- Reduce(rbind, list_of_final_paths)
     
     return(cds_nn)
   }
 
-  # k-NN table -> dataframe of labels.
   # Train priors on the reference cds
   # Calculate the posteriors and label the query cds
   get_nn_ontogeny_cell_labels <- function(
@@ -224,12 +225,13 @@ train_priors_on_reference <- function(
       maxeval
   ) {
     
-    #Get the number of labels and cells
+    #Get constants
     NUMBER_OF_CELLS <- nrow(query_data)
     NUMBER_OF_REFERENCE_CELLS <- nrow(ref_coldata)
     NUMBER_OF_QUERY_CELLS <- NUMBER_OF_CELLS - NUMBER_OF_REFERENCE_CELLS
     NUMBER_OF_LABELS <- length(ref_column_names)
     
+    # Get the ontogeny of the reference data set
     ref_ontogeny <- ref_coldata[, ref_column_names]
     ref_ontogeny <- unique(ref_ontogeny)
     ref_ontogeny <- as.data.frame(ref_ontogeny)
@@ -435,6 +437,7 @@ train_priors_on_reference <- function(
     cds_res <- search_nn_index(query_matrix=cds_reduced_dims, nn_index=cds_nn_index,
                               k=k, nn_control=nn_control, verbose=verbose)
     
+    #Run the main function to label.
     cds_nn <- get_nn_ontogeny_cell_labels(
       query_data=cds_reduced_dims,
       query_search=cds_res,
@@ -443,8 +446,8 @@ train_priors_on_reference <- function(
       maxeval=maxeval
     )
 
+    # Apply the new labels to the query data set
     colnames(cds_nn) <- query_column_names
-    
     colData(cds_query) <- cbind(colData(cds_query), cds_nn)
     
     return(cds_query)
