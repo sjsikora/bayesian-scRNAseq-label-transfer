@@ -443,12 +443,6 @@ train_priors_on_reference <- function(
       maxeval=maxeval
     )
 
-    #cds_nn <- check_ontogeny(cds_nn)
-    #colnames(cds_nn) <- c(query_column_names, "break")
-    #rownames(colData(cds_query)) <- 1:54277
-    #colData(cds_query) <- cbind(colData(cds_query), cds_nn)
-    #plot_cells(cds_query, color_cells_by="break")
-
     colnames(cds_nn) <- query_column_names
     
     colData(cds_query) <- cbind(colData(cds_query), cds_nn)
